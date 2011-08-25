@@ -1,0 +1,110 @@
+Problems, issues, features, and questions.
+
+Debugging:
+MONO_LOG_LEVEL=debug calico --no-handler 
+
+May need:
+
+ <startup useLegacyV2RuntimeActivationPolicy="true">
+
+in calico.exe.config to allow different frameworks (2 vs 4).
+
+= Math.NET =
+
+mathdotnet.com - numerics, symbolic, etc.
+
+= Sdl =
+
+6.1.0
+
+1) Could not make .config find libSDL.dll
+2) copied Calico/lib/SDL.dll to Calico/bin/libSDL.dll.so
+
+Works with just Tao
+
+= Ideas = 
+
+1) SpeechBubble((center), "text", (endpoint))
+
+2) Given a Text() object, need to know height, width:
+>>> text.width("w")
+16
+>>> text.width("i")
+8
+
+= Calico =
+
+IMMEDIATE
+
+# Examples
+# Scheme doesn't raise exception in file load
+
+These are issues with the code in Calico/src/*.py
+
+# BUG: right-click on an error line 2nd time on windows doesn't load file (fixed with print? Probably a timing/lock issue)
+# BUG: try to save to a read-only/link crashes
+# BUG: UP and DOWN in history needs to move caret (on windows?)
+# BUG: On close, need to wait for the connection to finish
+
+Major missing features:
+
+# Calico: Need to run code in an AppDomain rather than thread?
+# Calico: Add Printing
+# Calico: options for toggle word wrap, linenumbers, others
+# Calico: connect menu edit/copy/paste/select all (see gtk-sharp for hints)
+# Calico: No backups made of files when saving
+# Calico: No backups made during editing (autosave)
+# Calico: Quit doesn't ask if you are sure, or if you want to save unsaved edits.
+# Calico: Plugins (see the way that gedit handles plugins)
+# Calico: Need project icon/graphics
+# Calico: glib.io_add_watch - watch to see if something else edits file?
+# Calico: Find Libraries for text-to-speech, gamepad, 3D graphics, music, etc
+
+= Education =
+
+# Provide easy method to take surveys, quiz
+# Log file for teacher analysis
+# Provide student "Hint" links to wiki page on error
+# Interactive instruction ala Classroom Presenter, but via chat
+# Submit zipfile to teacher dialog (zipfiles written in src/utils.py)
+
+= Modules =
+
+These are issue in Calico/modules/*
+
+Myro module for using robots:
+
+Graphics module for easy 2D graphics:
+
+# Graphics: make sure to do update for all interactive object changes
+# Graphics: multi-point line using cairo
+# Add buttons and sliders (ala NetLogo)
+
+= Languages = 
+
+IronPython on Mono:
+
+# Unhandled Exception in recursion too deep is really handled, but crashes Mono
+
+Experimental CLR Scheme:
+
+# Scheme: (robot.beep 1.0 400.0 400.0) needs to be floats?
+# Scheme: doesn't raise exception on loading file
+
+Drag and drop language Dinah:
+
+# Dinah: Get working
+## Mono doesn't allow drag and drop from TreeView
+## read classes, methods, params and return values from DLL
+## save/read file format
+## execute file
+
+= System = 
+
+DLR things for the Dynamic Language Runtime. Mono is the open source VM for the CLR.
+
+# DLR: Stack overflow in Mono IronPython crashes rather than reports error.
+# DLR: Can we run chiron and have our code run in web browser through Silverlight/Moonlight?
+
+# Mono: Dinah crashes on Mac on drop. 
+# Mono: Windows doesn't respond to treeview drags after Mono 2.6.4. Bug reported as: https://bugzilla.novell.com/show_bug.cgi?id=664824
