@@ -621,7 +621,7 @@ class CalicoProject(object):
             actionHandler(action, **data)
 
 # Let's start!
-version = "1.0.0"
+version = "1.0.1"
 if "--help" in args:
     print()
     print(_("Calico Project, Version %s, on %s") % (version,
