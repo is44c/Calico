@@ -8,7 +8,7 @@ arrow1.rotateTo(0)
 arrow1.pen.setWidth(4)
 arrow1.penDown()
 
-arrow2 = Arrow((150, 151))
+arrow2 = Arrow((148, 158))
 arrow2.pen.color = Color("red")
 arrow2.draw(win)
 arrow2.rotateTo(180)
