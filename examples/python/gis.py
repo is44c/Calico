@@ -61,16 +61,16 @@ def px2ll(x, y, zoom):
     lat = blam / (math.pi / 180)
     return (lat, lng)
 
-def drawStates(color=None):
+def drawStates(win, color=None):
     """
     Draw all states in a given color, or random.
     """
     retval = {}
     for state in states:
-        retval[state] = drawState(state, color)
+        retval[state] = drawState(win, state, color)
     return retval
 
-def drawState(state, color=None):
+def drawState(win, state, color=None):
     retval = []
     for list in states[state]:
         polygon = Polygon(*[ll2xy(pair[0], pair[1]) for pair in list])
@@ -110,7 +110,7 @@ def readCapitals(filename):
                           "latitude": float(lng)}
     return retval
 
-def drawCapitals():
+def drawCapitals(win):
     for capital in capitals:
         x, y = ll2xy(capitals[capital]["longitude"],
                      capitals[capital]["latitude"])
@@ -133,7 +133,7 @@ def getLLClick():
     x, y = getMouseNow()
     return xy2ll(x, y)
 
-def displayControls():
+def displayControls(win):
     zoomin = Rectangle((width - 50, 0), (width, height))
     zoomin.fill = Color("white")
     zoomin.draw(win)
@@ -160,22 +160,23 @@ center = ll2px(center_ll[0], center_ll[1], zoom) # center of map, in global XY
 states = readStates("states.dat")
 capitals = readCapitals("capitals.dat")
 
-win = Window(width, height)
-pstates = drawStates()
-drawCapitals()
-displayControls()
-
-while win.IsRealized:
-    x, y = getMouse()
-    if x < 50:
-        zoom = max(0, zoom - 1)
-    elif x > width - 50:
-        zoom = min(30, zoom + 1)
-    else:
-        center_ll = xy2ll(x, y)
-    print("Center at (%s North, %s West) at zoom %s" % (center_ll[0], center_ll[1], zoom))
-    center = ll2px(center_ll[0], center_ll[1], zoom) # center of map, in global XY
-    win.clear()
-    drawStates()
-    drawCapitals()
-    displayControls()
+def demo():
+    global width, height, zoom, center_ll, center
+    win = Window("Calico GIS", width, height)
+    drawStates(win)
+    drawCapitals(win)
+    displayControls(win)
+    while win.IsRealized:
+        x, y = getMouse()
+        if x < 50:
+            zoom = max(0, zoom - 1)
+        elif x > width - 50:
+            zoom = min(30, zoom + 1)
+        else:
+            center_ll = xy2ll(x, y)
+        print("Center at (%s North, %s West) at zoom %s" % (center_ll[0], center_ll[1], zoom))
+        center = ll2px(center_ll[0], center_ll[1], zoom) # center of map, in global XY
+        win.clear()
+        drawStates(win)
+        drawCapitals(win)
+        displayControls(win)
