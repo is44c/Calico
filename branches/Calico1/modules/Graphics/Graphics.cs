@@ -219,7 +219,15 @@ public static class Graphics {
     getWindow().onMouseUp(function);
   }
 
+  public static void onMouseUp(Func<object,Event,object> function) {
+    getWindow().onMouseUp(function);
+  }
+
   public static void onMouseDown(PythonFunction function) {
+    getWindow().onMouseDown(function);
+  }
+
+  public static void onMouseDown(Func<object,Event,object> function) {
     getWindow().onMouseDown(function);
   }
 
@@ -227,11 +235,23 @@ public static class Graphics {
     getWindow().onMouseMovement(function);
   }
 
+  public static void onMouseMovement(Func<object,Event,object> function) {
+    getWindow().onMouseMovement(function);
+  }
+
   public static void onKeyPress(PythonFunction function) {
     getWindow().onKeyPress(function);
   }
 
+  public static void onKeyPress(Func<object,Event,object> function) {
+    getWindow().onKeyPress(function);
+  }
+
   public static void onKeyRelease(PythonFunction function) {
+    getWindow().onKeyRelease(function);
+  }
+
+  public static void onKeyRelease(Func<object,Event,object> function) {
     getWindow().onKeyRelease(function);
   }
 
@@ -1234,6 +1254,10 @@ public static class Graphics {
       onClickCallbacks.Add(function);
     }
 
+    public void onMouseDown(Func<object,Event,object> function) {
+      onClickCallbacks.Add(function);
+    }
+
     public void run(object function) {
         if (function is PythonFunction) {
 	  try {
@@ -1268,7 +1292,15 @@ public static class Graphics {
       onMouseUpCallbacks.Add(function);
     }
     
+    public void onMouseUp(Func<object,Event,object> function) {
+      onMouseUpCallbacks.Add(function);
+    }
+    
     public void onMouseMovement(PythonFunction function) {
+      onMouseMovementCallbacks.Add(function);
+    }
+    
+    public void onMouseMovement(Func<object,Event,object> function) {
       onMouseMovementCallbacks.Add(function);
     }
     
@@ -1276,7 +1308,15 @@ public static class Graphics {
       onKeyPressCallbacks.Add(function);
     }
     
+    public void onKeyPress(Func<object,Event,object> function) {
+      onKeyPressCallbacks.Add(function);
+    }
+    
     public void onKeyRelease(PythonFunction function) {
+      onKeyReleaseCallbacks.Add(function);
+    }
+    
+    public void onKeyRelease(Func<object,Event,object> function) {
       onKeyReleaseCallbacks.Add(function);
     }
     
@@ -1643,6 +1683,29 @@ public static class Graphics {
     // FIXME: set x,y of points should go from screen_coords to relative
     // FIXME: should call QueueDraw on set
 
+    public virtual bool hit(double x, double y)
+    {
+      return false;
+    }
+
+    public void connect(string signal, PythonFunction function) {
+      if (signal == "click") {
+	window.onMouseDown(
+          delegate (object obj, Event evt) {
+	    if (hit(evt.x, evt.y)) {
+	      try {
+		IronPython.Runtime.Operations.PythonCalls.Call(function, obj, evt);
+	      } catch (Exception e) {
+		Console.Error.WriteLine("Error in connect('click') function");
+		Console.Error.WriteLine(e.Message);
+	      }	
+	      return true;
+	    }
+	    return false;
+	  });
+      }
+    }
+
     public double bounce {
       get
         {
@@ -1904,11 +1967,11 @@ public static class Graphics {
       }
     }
     
-    public bool hit(IList iterable) {
-      return hit(new Point(iterable[0], iterable[1]));
+    public bool contains(IList iterable) {
+      return contains(new Point(iterable[0], iterable[1]));
     }
 
-    public bool hit(Point p) {
+    public bool contains(Point p) {
           int counter = 0;
           double xinters;
           Point p1, p2;
@@ -3355,6 +3418,49 @@ public static class Graphics {
 
   } // -- end of Picture class
 
+  public class Button : Shape {
+    Text label;
+    double padding = 5;
+    RoundedRectangle rectangle;
+    string text;
+    Point point;
+    public Button(Point point, string text) : base(true) {
+      this.point = point;
+      this.text = text;
+      set_points(point);
+    }
+    
+    public new void draw(WindowClass win) { // Button
+      window = win;
+      label = new Text(point, text);
+      label.fontSize = 12;
+      label.fill = new Color("black");
+      // Draw label first, in order that width will be defined:
+      label.draw(win);
+      rectangle = new RoundedRectangle(new Point(point.x - width/2 - padding, 
+						 point.y - height/2 - padding),
+				       new Point(point.x + width/2 + padding, 
+						 point.y + height/2 + padding),
+				       padding);
+      rectangle.fill = new Color("white");
+      rectangle.outline = new Color("gray");
+      rectangle.draw(win);
+      win.stackOnTop(label);
+    }
+
+    public override bool hit(double px, double py) {
+      return (((x - width/2 - padding) <= px && px <= (x + width/2 + padding)) &&
+	      ((y - height/2 - padding) <= py && py <= (y + height/2 + padding)));
+    }
+
+    public double width {
+      get { return label.width; }
+    }
+    public double height {
+      get { return label.height;}
+    }
+  }
+
   public class Rectangle : Shape {
         public Rectangle(IList iterable1, IList iterable2) :
                 this(new Point(iterable1[0], iterable1[1]), 
@@ -3393,6 +3499,61 @@ public static class Graphics {
       body.Friction = _friction;
       body.BodyType = _bodyType;
       body.IsStatic = (_bodyType == FarseerPhysics.Dynamics.BodyType.Static);
+    }
+  }
+
+  public class RoundedRectangle : Shape {
+    public double radius = 0.0;
+    public RoundedRectangle(IList iterable1, IList iterable2, double radius) :
+    this(new Point(iterable1[0], iterable1[1]), 
+	 new Point(iterable2[0], iterable2[1]), 
+	 radius) {
+    }
+    public RoundedRectangle(Point point1, Point point2, double radius) : base(true) {
+      set_points(new Point(point1.x, point1.y),
+		 new Point(point2.x, point1.y),
+		 new Point(point2.x, point2.y),
+		 new Point(point1.x, point2.y));
+      this.radius = radius;
+    }
+    
+    public override void render(Cairo.Context g) {
+      // draws rectangles with rounded (circular arc) corners 
+      g.Save();
+      Point temp = screen_coord(center);
+      g.Translate(temp.x, temp.y);
+      g.Rotate(_rotation);
+      g.Scale(_scaleFactor, _scaleFactor);
+      if (points != null) {
+        g.LineWidth = border;
+	double top = points[0].y + radius;
+	double bottom = points[2].y - radius;
+	double left = points[0].x + radius;
+	double right = points[2].x - radius;
+
+        //g.MoveTo(p1.x, p2.y);
+	g.Arc(left, top, radius, .50 * (Math.PI * 2.0), .75 * (Math.PI * 2.0));
+	g.Arc(right, top, radius, .75 * (Math.PI * 2.0), 1.0 * (Math.PI * 2.0));
+	g.Arc(right, bottom, radius, 1.0 * (Math.PI * 2.0), .25 * (Math.PI * 2.0));
+	g.Arc(left, bottom, radius, .25 * (Math.PI * 2.0), .50 * (Math.PI * 2.0));
+
+        g.ClosePath();
+	if (_fill != null) {
+	  g.Color = _fill._cairo;
+	  g.FillPreserve();
+	}
+	if (_outline != null) {
+	  g.Color = _outline._cairo;
+	  g.Stroke();
+	}
+	foreach (Shape shape in shapes) {
+	  shape.render(g);
+	  shape.updateGlobalPosition(g);
+	}
+	g.Restore();
+	if (has_pen)
+	  pen.render(g);
+      }
     }
   }
 
@@ -3650,6 +3811,7 @@ public static class Graphics {
         shape.render(g);
 	shape.updateGlobalPosition(g);
       }
+      g.Stroke();
       g.Restore();
     }
 
