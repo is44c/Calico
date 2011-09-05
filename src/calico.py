@@ -93,7 +93,7 @@ from config import config
 from utils import _, Chat
 
 # Setup Runtime environment:
-def handle_exception(arg):
+def handle_exception(*args, **kwargs):
     if pw.shell:
         Gtk.Application.Invoke(pw.shell.stop_running)
         Gtk.Application.Invoke(lambda s,a: pw.shell.message("[Script has stopped------]"))
@@ -101,7 +101,7 @@ def handle_exception(arg):
 args = sys.argv[1:] or list(System.Environment.GetCommandLineArgs())[1:]
 # Turn on Unhandled Exception Handled:
 # EXCEPTION HANDLER
-if "--no-handler" not in args:
+if "--debug" not in args:
     GLib.ExceptionManager.UnhandledException += handle_exception
 
 # Define local functions and classes
@@ -111,12 +111,11 @@ class CalicoProject(object):
     This class is meant to be created as a singleton instance
     to hold all of the components of one user together.
     """
-    def __init__(self, mutex, argv):
+    def __init__(self, argv):
         """
         Constructor for the singleton Calico instance. argv is the
         command-line files and flags.
         """
-        self.mutex = mutex
         self.last_error = ""
         self.actionHandlers = []
         self.debug = False
@@ -621,7 +620,7 @@ class CalicoProject(object):
             actionHandler(action, **data)
 
 # Let's start!
-version = "1.0.4"
+version = "2.0.0"
 if "--help" in args:
     print()
     print(_("Calico Project, Version %s, on %s") % (version,
@@ -688,9 +687,25 @@ def handleMessages(sender, args):
 
 #################################################
 # Single Instance Application
+current = System.Diagnostics.Process.GetCurrentProcess()
+alreadyRunning = False
+for process in System.Diagnostics.Process.GetProcessesByName("mono"):
+    if process.Id == current.Id:
+        continue
+    for module in process.Modules:
+        if module.ModuleName == "Myro.dll":
+            alreadyRunning = True
 messages = os.path.join(calico_user, "messages")
-(mutex, locked) = System.Threading.Mutex(True, r"Global\CalicoProject/%s" % System.Environment.UserName, None)
-if locked:
+if alreadyRunning:
+    # Not allowed! We'll send command line to running Calico through
+    # message file. Append args to command line:
+    print("Calico is already running...")
+    fp = file(messages, "a")
+    fp.write("\n".join(args) + "\n")
+    fp.close()
+    # Exit; message has been sent
+    sys.exit(0)
+else:
     # We are the "server"; clean the messages file:
     fp = file(messages, "w")
     fp.close()
@@ -702,22 +717,18 @@ if locked:
     watcher.Changed += handleMessages
     watcher.EnableRaisingEvents = True
     # and continue loading...
-else:
-    # Not allowed! We'll send command line to running Calico through
-    # message file. Append args to command line:
-    fp = file(messages, "a")
-    fp.write("\n".join(args) + "\n")
-    fp.close()
-    # Exit; message has been sent
-    sys.exit(0)
 # end of Single Instance logic
 #################################################
 
 if "--nogui" not in args:
+    # FIXME: thread safety:
+    # http://developer.gnome.org/gtk-faq/stable/x481.html
+    #g_thread_init(NULL);
+    #gdk_threads_init();
     Gtk.Application.Init()
 #------------------------------
 try:
-    pw = CalicoProject(mutex, args)
+    pw = CalicoProject(args)
 except:
     traceback.print_exc()
     sys.exit()

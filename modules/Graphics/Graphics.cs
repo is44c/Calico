@@ -2947,6 +2947,49 @@ public static class Graphics {
                  new Point(_pixbuf.Width, _pixbuf.Height), 
                  new Point(0, _pixbuf.Height));
     }
+
+	public void fromArray(Byte [] buffer, string format) {
+	  if (format == "BGRX") { // b, r, g, ignore
+		int count = 0;
+		for (int i=0; i < buffer.Length; i+=4) {
+		  byte b = buffer[i];
+		  byte g = buffer[i + 1];
+		  byte r = buffer[i + 2];
+		  // NOTE: x is from the other side
+		  int x = _pixbuf.Width - count % _pixbuf.Width;
+		  int y = count/_pixbuf.Width;
+          Marshal.WriteByte(_pixbuf.Pixels, y * _pixbuf.Rowstride +
+              x * _pixbuf.NChannels + 0, r);
+          Marshal.WriteByte(_pixbuf.Pixels, y * _pixbuf.Rowstride +
+              x * _pixbuf.NChannels + 1, g);
+          Marshal.WriteByte(_pixbuf.Pixels, y * _pixbuf.Rowstride +
+              x * _pixbuf.NChannels + 2, b);
+          Marshal.WriteByte(_pixbuf.Pixels, y * _pixbuf.Rowstride +
+              x * _pixbuf.NChannels + 3, 255);
+		  count++;
+		}
+	  } else if (format == "GRAY") { 
+		int count = 0;
+		for (int i=0; i < buffer.Length; i++) {
+		  byte g = buffer[i];
+		  // NOTE: x is from the other side
+		  int x = _pixbuf.Width - count % _pixbuf.Width;
+		  int y = count/_pixbuf.Width;
+          Marshal.WriteByte(_pixbuf.Pixels, y * _pixbuf.Rowstride +
+              x * _pixbuf.NChannels + 0, g);
+          Marshal.WriteByte(_pixbuf.Pixels, y * _pixbuf.Rowstride +
+              x * _pixbuf.NChannels + 1, g);
+          Marshal.WriteByte(_pixbuf.Pixels, y * _pixbuf.Rowstride +
+              x * _pixbuf.NChannels + 2, g);
+          Marshal.WriteByte(_pixbuf.Pixels, y * _pixbuf.Rowstride +
+              x * _pixbuf.NChannels + 3, 255);
+		  count++;
+		}
+	  } else {
+		throw new Exception("Picture.fromArray(array, format): invalid format");
+	  }
+	  QueueDraw();
+	}
     
     public Picture(int width, int height, byte [] buffer, int depth) : this(true) {
       // depth should be 1
@@ -3144,7 +3187,11 @@ public static class Graphics {
 
     public void savePicture(string filename) {
       // png, and jpg
-      _pixbuf.Save(filename, filename.Substring(filename.Length - 3, 3));
+      String format = "jpeg";
+      if (filename.Substring(filename.Length - 3, 3) == "png"){
+       format = "png";
+      }
+      _pixbuf.Save(filename, format);
     }
     
     public Pixel getPixel(int x, int y) {
