@@ -384,7 +384,7 @@ public static class Myro {
       List retval = new List();
       int num = Sdl.SDL_JoystickNumAxes(handles[index]);
       for (int button = 0; button < num; button++) {
-        retval.append(Sdl.SDL_JoystickGetAxis(handles[index], button)/32767.0);
+        retval.append(Math.Round(Sdl.SDL_JoystickGetAxis(handles[index], button)/32767.0, 2));
       }
       return retval;
     }
@@ -2650,7 +2650,7 @@ public static class Myro {
 
     public override double getBattery() {
       write(Scribbler.GET_BATTERY);
-      double retval = read_2byte() / 20.9813;
+      double retval = Math.Round(read_2byte() / 20.9813, 2);
       return retval;
     }
 
@@ -2772,9 +2772,21 @@ public static class Myro {
     }
   
     public void flush() { 
+      byte [] bytes = new byte[1];
       lock(serial) {
         serial.DiscardInBuffer();
         serial.DiscardOutBuffer();
+	while (true) {
+	  try {
+	    serial.Read(bytes, 0, 1);
+	  } catch {
+	    // timeout, default is one second
+	    // no data, so we're done
+	    break;
+	  }
+	  serial.DiscardInBuffer();
+	  serial.DiscardOutBuffer();
+	}
       }
     }
 
