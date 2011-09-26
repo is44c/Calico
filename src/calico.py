@@ -93,9 +93,11 @@ from config import config
 from utils import _, Chat
 
 # Setup Runtime environment:
-def handle_exception(*args, **kwargs):
+def handle_exception(arg):
     if pw.shell:
         Gtk.Application.Invoke(pw.shell.stop_running)
+        Gtk.Application.Invoke(lambda s,a: pw.shell.message(
+                str(arg.ExceptionObject).split("\n")[0]))
         Gtk.Application.Invoke(lambda s,a: pw.shell.message("[Script has stopped------]"))
 
 args = sys.argv[1:] or list(System.Environment.GetCommandLineArgs())[1:]
@@ -119,6 +121,7 @@ class CalicoProject(object):
         self.last_error = ""
         self.actionHandlers = []
         self.debug = False
+        self.trace = False
         self.shell = None
         self.editor = None
         self.chat = None
@@ -163,7 +166,7 @@ class CalicoProject(object):
                 self.plugins[base] = plugin
         # Ok, done with initialization, let's go back to where we came
         os.chdir(self.startpath)
-        request_shell = False
+        request_shell = True # needed because running would hang otherwise; and will be one window soon
         request_editor = False
         request_chat = False
         files = []
@@ -186,6 +189,8 @@ class CalicoProject(object):
                 self.language = lang.strip().lower()
             elif arg == "--debug":
                 self.debug = True
+            elif arg == "--trace":
+                self.trace = True
             else:
                 files.append(os.path.abspath(arg))
                 request_editor = True
@@ -247,11 +252,13 @@ class CalicoProject(object):
         """
         # force into a Python string:
         filename = str(filename.ToString())
+        base, ext = filename.rsplit(".")
         for name in self.languages:
-            if filename.endswith("." + self.languages[name].extension):
+            if ext in self.languages[name].extensions:
                 if self.shell:
                     self.shell.change_to_lang(name)
-                return self.engine[name].execute_file(filename)
+                if name in self.engine:
+                    return self.engine[name].execute_file(filename)
         raise AttributeError(_("unknown file extension: '%s'") % filename)
 
     def blast(self, mfrom, type, filename, code):
@@ -293,8 +300,9 @@ class CalicoProject(object):
         Get the language string (lower-case) based on a filename
         extension.
         """
+        base, ext = filename.rsplit(".")
         for name in self.languages:
-            if filename.endswith("." + self.languages[name].extension):
+            if ext in self.languages[name].extensions:
                 return name
         return "python" # FIXME: default language come from config
 
@@ -640,7 +648,7 @@ class CalicoProject(object):
             actionHandler(action, **data)
 
 # Let's start!
-version = "1.0.9"
+version = "1.1.0"
 if "--help" in args:
     print()
     print(_("Calico Project, Version %s, on %s") % (version,
@@ -659,6 +667,7 @@ if "--help" in args:
     print(_("  StartCalico --version                  Displays the version number (%s)" % version))
     print(_("  StartCalico --help                     Displays this message"))
     print(_("  StartCalico --debug                    Puts Calico in debugging mode"))
+    print(_("  StartCalico --trace                    Puts Calico in tracing mode"))
     print()
     sys.exit(0)
 elif "--version" in args:
@@ -705,6 +714,10 @@ def handleMessages(sender, args):
         fp.close()
         messagesLocked = False
 
+if "--trace" in args:
+    from debugger import Debugger
+    Debugger(None, interactive=False, show_trace=True).set_trace()
+
 #################################################
 # Single Instance Application
 current = System.Diagnostics.Process.GetCurrentProcess()
@@ -713,7 +726,7 @@ for process in System.Diagnostics.Process.GetProcessesByName("mono"):
     if process.Id == current.Id:
         continue
     for module in process.Modules:
-        if module.ModuleName == "Myro.dll":
+        if module.ModuleName in ["Myro.dll", "mono"]:
             alreadyRunning = True
 messages = os.path.join(calico_user, "messages")
 if alreadyRunning:
