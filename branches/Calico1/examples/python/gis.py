@@ -180,3 +180,6 @@ def demo():
         drawStates(win)
         drawCapitals(win)
         displayControls(win)
+
+if __name__ == "<module>":
+    demo()

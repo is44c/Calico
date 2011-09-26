@@ -92,9 +92,10 @@ class Shell(object):
         print(text, end=end)
 
     def execute_file(self, filename, language):
-        self.message(_("Loading file '%s'...") % filename)
-        self.calico.engine[language].execute_file(filename)
-        self.message(_("Done loading file."))
+        if language in self.calico.engine.get_languages():
+            self.message(_("Loading file '%s'...") % filename)
+            self.calico.engine[language].execute_file(filename)
+            self.message(_("Done loading file."))
 
 class ShellWindow(Window):
     def __init__(self, calico):
@@ -456,10 +457,14 @@ class ShellWindow(Window):
         self.on_key_press(widget=self, event=None, force=True)
 
     def on_stop(self, obj, event):
+        import Myro
         if (self.executeThread):
             self.message(_("Stopping..."))
             self.executeThread.Abort()
             self.executeThread = None
+            if Myro.robot:
+                Myro.robot.flush()
+                Myro.robot.stop()
             Gtk.Application.Invoke(self.stop_running)
         else:
             self.searchbar.search_off()
@@ -511,6 +516,8 @@ class ShellWindow(Window):
         self.message(self.prompt.Text, tag="purple")
 
     def execute_file(self, filename, language):
+        if language not in self.calico.engine.get_languages():
+            return
         if (self.executeThread):
             return
 
@@ -602,9 +609,6 @@ class ShellWindow(Window):
         return retval
 
     def stop_running(self, sender, args):
-        import Myro
-        if Myro.robot:
-            Myro.robot.flush()
         self.executeThread = None
         self.toolbar_buttons[Gtk.Stock.Stop].Sensitive = False
         self.toolbar_buttons[Gtk.Stock.Apply].Sensitive = True
@@ -642,6 +646,8 @@ class ShellWindow(Window):
             self.calico.last_error = ""
 
     def execute_in_background(self, text):
+        if self.language not in self.calico.engine.get_languages():
+            return
         if (self.executeThread):
             return
 
@@ -656,7 +662,9 @@ class ShellWindow(Window):
         self.executeThread.Start()
 
     def ready_for_execute(self, text):
-        return self.calico.engine[self.language].ready_for_execute(text)
+        if self.language in self.calico.engine.get_languages():
+            return self.calico.engine[self.language].ready_for_execute(text)
+        return False
 
     def goto_file(self, filename, lineno):
         self.calico.setup_editor()
@@ -709,12 +717,11 @@ class TabCompletion:
         self.partial = ""
         self.items = []
         if self.variable:
-            parts = self.variable.split(".")
+            parts = self.calico.engine[self.calico.shell.language].getVariableParts(self.variable)
             if len(parts) == 1: # Easy, just get the vars that match:
                 root = parts[0]
                 self.partial = root
-                self.items = [x for x in self.calico.engine[self.calico.shell.language].getVariables()
-                              if x.startswith(root)]
+                self.items = self.calico.engine[self.calico.shell.language].getCompletions(root)
                 # and not hasattr(x, "DeclaringType")]
             else:
                 root = parts[0]
@@ -773,3 +780,4 @@ class TabCompletion:
         if candidate.isdecimal() or candidate.isdigit() or candidate.isnumeric():
             return None
         return candidate
+

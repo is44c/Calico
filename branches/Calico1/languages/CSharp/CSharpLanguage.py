@@ -90,9 +90,16 @@ class CSharpEngine(Engine):
             return False
         return True
 
+    def getCompletions(self, starts_with):
+        items, root = self.engine.GetCompletions(starts_with)
+        return [root + x for x in list(items)]
+
+    def getVariableParts(self, variable):
+        return [variable]
+
 class CSharpLanguage(Language):
     def get_engine_class(self):
         return CSharpEngine
 
 def register_language():
-    return CSharpLanguage("csharp", "cs")
+    return CSharpLanguage("csharp", ["cs"])

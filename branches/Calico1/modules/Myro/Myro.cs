@@ -53,6 +53,7 @@ public static class Myro {
   //public readonly static List __all__ = new List() {"robot"};
 
   public static Robot robot;
+  public static Simulation simulation;
   public readonly static Computer computer = new Computer();
   static string dialogResponse = null;
   static string REVISION = "$Revision: $";
@@ -65,25 +66,15 @@ public static class Myro {
 
   public readonly static Gamepads gamepads = new Gamepads();
 
-  static void invoke_function(object function, object args) {
-    Gtk.Application.Invoke( delegate {
-        if (function is PythonFunction) {
-          try {
-            IronPython.Runtime.Operations.PythonCalls.Call(function, args);
-          } catch (Exception e) {
-            Console.Error.WriteLine("Error in function");
-            Console.Error.WriteLine(e.Message);
-          }        
-        } else {
-          try {
-            Func<object,object> f = (Func<object,object>)function;
-            f(args);
-          } catch (Exception e) {
-            Console.Error.WriteLine("Error in function");
-            Console.Error.WriteLine(e.Message);
-          }        
-        }
-      });
+  static void invoke_function(Func<object,object> function, object args) {
+    try {
+      Gtk.Application.Invoke( delegate {
+	  function(args);
+	});
+    } catch (Exception e) {
+      Console.Error.WriteLine("Error in function");
+      Console.Error.WriteLine(e.Message);
+    }        
   }
 
   public static void gamepad(PythonDictionary dict) {
@@ -97,7 +88,7 @@ public static class Myro {
     while (true) {
       results = (PythonDictionary)getGamepad(keys);
       foreach (string key in results.Keys) {
-	invoke_function(dict[key], results[key]);
+	invoke_function((Func<object,object>)dict[key], results[key]);
       }
     }
   }
@@ -410,7 +401,8 @@ public static class Myro {
         return gamepads.getAxisStates(index);
       } else if (what == "robot") {
         List xy = gamepads.getAxisStates(index);
-        return Graphics.PyList(-((double)xy[1]), -((double)xy[0]));
+        return Graphics.PyList(-System.Convert.ToDouble(xy[1]), 
+			       -System.Convert.ToDouble(xy[0]));
       } else if (what == "ball") {
         return gamepads.getBallStates(index);
       } else if (what == "hat") {
@@ -624,13 +616,17 @@ public static class Myro {
     initialize(null);
   }
 
-  public static void init(string port, int baud=38400) {
+  public static void init(string port) {
+    initialize(port, 38400);
+  }
+
+  public static void init(string port, int baud) {
     initialize(port, baud);
   }
 
   public static void initialize(string port, int baud=38400) {
         bool need_port = true;
-        if (port.StartsWith("COM") || port.StartsWith("com")) {
+        if (port != null && (port.StartsWith("COM") || port.StartsWith("com"))) {
             port = @"\\.\" + port;             // "comment
         }
         if (Myro.robot is Scribbler) {
@@ -654,15 +650,120 @@ public static class Myro {
           }
         }
           } // not a serial port
-        } // not a scribbler
+        } else if (Myro.robot is SimScribbler) {
+	  // do nothing if simulator
+	  need_port = false;
+	}
         if (need_port) {
           if (port == null) {
-                port = (string)ask("Port");
+	    port = (string)ask("Port");
           }
-          robot = new Scribbler(port, baud);
+          if (port != null) {
+	    if (port.StartsWith("sim")) {
+	      if (simulation == null) {
+		simulation = new Simulation();
+		Thread.Sleep((int)(1 * 1000));
+	      } else {
+		simulation.setup();
+	      }
+	      robot = new SimScribbler(simulation);
+	    } else {
+	      robot = new Scribbler(port, baud);
+	    }
+	  } else {
+	    Console.WriteLine("init() cancelled");
+	  }
         } else {
-          ((Scribbler)robot).setup();
+          robot.setup();
         }
+	if (simulation != null)
+	  simulation.setup();
+  }
+
+  public class Simulation {
+    public Graphics.WindowClass window;
+    public Thread thread;
+    public List<Robot> robots = new List<Robot>();
+
+    public Simulation() : this(640, 480) {
+    }
+
+    public Simulation(int width, int height) {
+      window = makeWindow("Myro Simulation", width, height);
+      window.mode = "physics";
+      window.gravity = Graphics.Vector(0,0); // turn off gravity
+      
+      Graphics.Rectangle wall = new Graphics.Rectangle(new Graphics.Point(0, 0), 
+						       new Graphics.Point(5, height));
+      wall.bodyType = "static";
+      wall.draw(window);
+
+      wall = new Graphics.Rectangle(new Graphics.Point(5, 0), 
+				    new Graphics.Point(width - 5, 5));
+      wall.bodyType = "static";
+      wall.draw(window);
+
+      wall = new Graphics.Rectangle(new Graphics.Point(width - 5, 0), 
+				    new Graphics.Point(width, height));
+      wall.bodyType = "static";
+      wall.draw(window);
+
+      wall = new Graphics.Rectangle(new Graphics.Point(0, height - 5), 
+				    new Graphics.Point(width - 5, height));
+      wall.bodyType = "static";
+      wall.draw(window);      
+
+      Graphics.Circle ball = new Graphics.Circle(new Graphics.Point(200, 200), 25);
+      ball.fill = makeColor("pink");
+      ball.draw(window);      
+    }
+    
+    public void setup()
+    {
+      if (window.state != "run") {
+	thread = new Thread(new ThreadStart(loop));
+	thread.IsBackground = true;
+	thread.Start();
+      }      
+    }
+
+    public void loop() {
+      float MeterInPixels = 64.0f;
+      window.state = "run";
+      while (window.state == "run") {
+	foreach(SimScribbler robot in robots) {
+	  lock(robot) {
+	    robot.stall = false;
+	    robot.frame.body.LinearVelocity = Graphics.VectorRotate(
+                  Graphics.Vector(robot.velocity, 0), 
+		  robot.frame.body.Rotation);
+	    // Get sensor readings
+	    robot.readings = new PythonDictionary();
+	    lock (window.canvas.shapes) {
+	      int count = 0;
+	      foreach (Graphics.Line line in robot.sensors) {
+		Graphics.Point p1 = robot.frame.getScreenPoint(line.getP1());
+		Graphics.Point p2 = robot.frame.getScreenPoint(line.getP2());
+		window.canvas.world.RayCast((fixture, v1, v2, hit) => {  
+                       List reading = new List();
+                       reading.append(line);
+                       reading.append(fixture);
+                       reading.append(v1);
+                       reading.append(v2);
+                       reading.append(hit);
+                       robot.readings[count] = reading;
+  	               return 1; 
+                   }, 
+		  Graphics.Vector(((float)p1.x)/MeterInPixels, ((float)p1.y)/MeterInPixels), 
+		  Graphics.Vector(((float)p2.x)/MeterInPixels, ((float)p2.y)/MeterInPixels));
+		count++;
+	      }
+	    }
+	  }
+	}
+	window.step(.1);
+      }
+    }
   }
 
   public static void uninit() {
@@ -704,7 +805,7 @@ public static class Myro {
         Math.Max(Math.Min(V,255),0));
   }
 
-  public static void forward(double power=1) {
+  public static void forward(double power) {
     robot.forward(power);
   }
   
@@ -712,7 +813,7 @@ public static class Myro {
     robot.forward(power, time);
   }
   
-  public static void translate(double power=1) {
+  public static void translate(double power) {
     robot.translate(power);
   }
   
@@ -720,7 +821,7 @@ public static class Myro {
     robot.translate(power, time);
   }
   
-  public static void rotate(double power=1) {
+  public static void rotate(double power) {
     robot.rotate(power);
   }
 
@@ -728,7 +829,7 @@ public static class Myro {
     robot.rotate(power, time);
   }
 
-  public static void backward(double power=1) {
+  public static void backward(double power) {
     robot.backward(power);
   }
 
@@ -740,11 +841,23 @@ public static class Myro {
     robot.stop();
   }
   
+  public static void penDown() {
+    robot.penDown();
+  }
+  
+  public static void penDown(string color) {
+    robot.penDown(color);
+  }
+  
+  public static Graphics.Line penUp() {
+    return robot.penUp();
+  }
+  
   public static void move(double translate, double rotate) {
     robot.move(translate, rotate);
   }
   
-  public static void turnLeft(double power=1) {
+  public static void turnLeft(double power) {
     robot.turnLeft(power);
   }
 
@@ -752,7 +865,7 @@ public static class Myro {
     robot.turnLeft(power, time);
   }
 
-  public static void turnRight(double power=1) {
+  public static void turnRight(double power) {
     robot.turnRight(power);
   }
 
@@ -800,6 +913,7 @@ public static class Myro {
   }
 
   public static void setup() {
+    robot.setup();
   }
 
   public static string getName() {
@@ -1257,13 +1371,34 @@ public static class Myro {
     return ask(question, "Information Request");
   }
 
+  public class MessageDialog : Gtk.MessageDialog {
+
+	public MessageDialog(Gtk.Window window,
+		Gtk.DialogFlags dialogFlags, 
+		Gtk.MessageType messageType,
+		Gtk.ButtonsType buttonsType,
+		string title) : base(window, dialogFlags, messageType, buttonsType, 
+			title) {
+	  KeyPressEvent += MyKeyPressEventHandler;
+	}
+	
+	[GLib.ConnectBefore]
+	public void MyKeyPressEventHandler (object obj, 
+		Gtk.KeyPressEventArgs args) {
+	  if (args.Event.Key == Gdk.Key.Return) {
+		Respond(Gtk.ResponseType.Ok);
+		args.RetVal = true;
+	  }
+	}
+  }
+
   public static object ask(object question, string title) {
     ManualResetEvent ev = new ManualResetEvent(false);
     object retval = null;
     Gtk.Entry myentry = null;
     PythonDictionary responses = new PythonDictionary();
     Gtk.Application.Invoke(delegate {
-        Gtk.MessageDialog fc = new Gtk.MessageDialog(null,
+        Gtk.MessageDialog fc = new MessageDialog(null,
                                0, Gtk.MessageType.Question,
                                Gtk.ButtonsType.OkCancel,
                                title);
@@ -1353,8 +1488,11 @@ public static class Myro {
   public class Randomizer {
     int _seed; 
     Random _random = new Random();
+
+    public Randomizer() : this(0) {
+	}
     
-    public Randomizer(int seed=0) {
+    public Randomizer(int seed) {
       if (seed != 0)
         this.seed = seed;
     }
@@ -1379,6 +1517,8 @@ public static class Myro {
   public readonly static Randomizer Random = new Randomizer(); 
   
   public class Robot {
+    internal double _lastTranslate = 0;
+    internal double _lastRotate = 0;
     
     public virtual void beep(double duration, double frequency, double frequency2) {
       // Override in subclassed robots
@@ -1514,30 +1654,60 @@ public static class Myro {
     public virtual void setPassword(string password) {
     }
     
-    public virtual void move(double translate, double rotate) {
-      // Override in subclassed robots
+    public virtual void adjustSpeed() {
     }
 
+    public virtual bool isConnected()
+    {
+      return true;
+    }
+
+    public virtual void flush()
+    {
+    }
+
+    public void penDown() {
+      penDown("black");
+    }
+
+    public virtual void penDown(string color)
+    {
+      ask(String.Format("Please put a {0} pen in the robot.", color));
+    }
+
+    public virtual Graphics.Line penUp()
+    {
+      return null;
+    }
+
+    public void move(double translate, double rotate) {
+      _lastTranslate = translate;
+      _lastRotate = rotate;
+      adjustSpeed();
+    }
+    
     public void playSong(List song) {
       playSong(song, 1.0);
     }
     
     public void playSong(List song, double speed) {
       foreach(IList tup in song) {
-    if (tup.Count == 2) {
-      double f = (double)tup[0]; 
-      double d = (double)tup[1];
-      beep(d, f);
-    } else if (tup.Count == 3) {
-      double f1 = (double)tup[0]; 
-      double f2 = (double)tup[1]; 
-      double d = (double)tup[2];
-      beep(d * speed, f1, f2);
-    }
+	if (tup.Count == 2) {
+	  double f = System.Convert.ToDouble(tup[0]); 
+	  double d = System.Convert.ToDouble(tup[1]);
+	  beep(d, f);
+	} else if (tup.Count == 3) {
+	  double f1 = System.Convert.ToDouble(tup[0]); 
+	  double f2 = System.Convert.ToDouble(tup[1]); 
+	  double d = System.Convert.ToDouble(tup[2]);
+	  beep(d * speed, f1, f2);
+	}
       }
     }
     
     public void stop() {
+      if (! isConnected()) 
+	return;
       move(0, 0);
     }
     
@@ -1616,64 +1786,266 @@ public static class Myro {
     
   }
 
-  public class Simulation : Robot {
-	public Graphics.WindowClass window;
-	public Graphics.Rectangle robotFrame;
-	public Thread thread;
+  public class SimScribbler : Robot {
+    public Graphics.Rectangle frame;
+    public Simulation simulation;
+    public double velocity = 0;
+    public double rate = 8.0;
+    public bool stall = false;
+    public string name = "Scribby";
+    public double battery = 7.6;
+    public List sensors = new List();
+    public PythonDictionary readings;
 
-	public Simulation() {
-	  window = makeWindow("Myro Simulation", 640, 480);
-	  window.mode = "physics";
-	  window.gravity = Graphics.Vector(0,0); // turn off gravity
-	  robotFrame = new Graphics.Rectangle(new Graphics.Point(320 - 23, 240 - 23), 
-		  new Graphics.Point(320 + 23, 240 + 23));
-	  // Draw a body:
-	  Graphics.Polygon body = new Graphics.Polygon();
+    public SimScribbler(Simulation simulation) {
+      this.simulation = simulation;
+      frame = new Graphics.Rectangle(new Graphics.Point(320 - 23, 240 - 23),
+				     new Graphics.Point(320 + 23, 240 + 23));
+      frame.pen.minDistance = 10; // minimum distance from last point
+      // Draw a body:
+      Graphics.Polygon body = new Graphics.Polygon();
 
-	  double [] sx = new double[] {0.05, 0.05, 0.07, 0.07, 0.09, 0.09, 0.07, 0.07, 0.05, 0.05,
-								   -0.05, -0.05, -0.07, -0.08, -0.09, -0.09, -0.08, -0.07, -0.05, -0.05};
-	  double [] sy = new double[] {0.06, 0.08, 0.07, 0.06, 0.06, -0.06, -0.06, -0.07, -0.08, -0.06,
-								   -0.06, -0.08, -0.07, -0.06, -0.05, 0.05, 0.06, 0.07, 0.08, 0.06};
+      double [] sx = new double[] {0.05, 0.05, 0.07, 0.07, 0.09, 0.09, 0.07, 
+				   0.07, 0.05, 0.05, -0.05, -0.05, -0.07, 
+				   -0.08, -0.09, -0.09, -0.08, -0.07, -0.05, 
+				   -0.05};
+      double [] sy = new double[] {0.06, 0.08, 0.07, 0.06, 0.06, -0.06, -0.06, 
+				   -0.07, -0.08, -0.06, -0.06, -0.08, -0.07, 
+				   -0.06, -0.05, 0.05, 0.06, 0.07, 0.08, 0.06};
+      for (int i =0; i < sx.Length; i++) {
+        body.append(new Graphics.Point(sx[i] * 250, sy[i] * 250));
+      }
+      body.fill = Color("red");
+      body.draw(frame);
+      // Draw wheels:
+      Graphics.Rectangle wheel1 = new Graphics.Rectangle(new Graphics.Point(-10, -23),
+							 new Graphics.Point(10, -17));
+      wheel1.color = Color("black");
+      wheel1.draw(frame);
+      Graphics.Rectangle wheel2 = new Graphics.Rectangle(new Graphics.Point(-10, 23),
+							 new Graphics.Point(10, 17));
+      wheel2.color = Color("black");
+      wheel2.draw(frame);
+      
+      // Details
+      Graphics.Circle hole = new Graphics.Circle(new Graphics.Point(0,0), 2);
+      hole.fill = Color("black");
+      hole.draw(frame);
+      
+      Graphics.Rectangle fluke = new Graphics.Rectangle(new Graphics.Point(17, -10),
+							new Graphics.Point(23, 10));
+      fluke.color = Color("green");
+      fluke.draw(frame);
+      
+      // sensors
+      Microsoft.Xna.Framework.Vector2 v2 = Graphics.VectorRotate(
+                       Graphics.Vector(100, 0), 
+		       0);
+      Graphics.Line line = new Graphics.Line(new Graphics.Point(25, -12), 
+					     new Graphics.Point(25 + v2.X, -12 + v2.Y));
+      line.draw(frame);
+      sensors.append(line);
+      // Just the fill, to see outline of bounding box:
+      frame.fill = null;
+      // FIXME: something not closing correctly in render when :
+      //frame.color = null;
+      frame.outline = Color("lightgrey");
+      // set collision
+      frame.draw(simulation.window);
+      frame.body.OnCollision += SetStall;
 
-	  for (int i =0; i < sx.Length; i++) {
-		body.append(new Graphics.Point(sx[i] * 250, sy[i] * 250));
-	  }
-	  body.fill = Color("red");
-	  body.draw(robotFrame);
-	  // Draw wheels:
-	  Graphics.Rectangle wheel1 = new Graphics.Rectangle(new Graphics.Point(-10, -23), 
-		  new Graphics.Point(10, -17));
-	  wheel1.color = Color("black");
-	  wheel1.draw(robotFrame);
-	  Graphics.Rectangle wheel2 = new Graphics.Rectangle(new Graphics.Point(-10, 23), 
-		  new Graphics.Point(10, 17));
-	  wheel2.color = Color("black");
-	  wheel2.draw(robotFrame);
+      this.simulation.robots.Add(this);
+    }
 
-	  // Details
-	  Graphics.Circle hole = new Graphics.Circle(new Graphics.Point(0,0), 10);
-	  hole.fill = Color("black");
-	  hole.draw(robotFrame);
+    bool SetStall(FarseerPhysics.Dynamics.Fixture fixture1,
+		  FarseerPhysics.Dynamics.Fixture ficture2,
+		  FarseerPhysics.Dynamics.Contacts.Contact contact) {
+	  stall = true;
+      return true;
+    }
+	
+    public override void adjustSpeed() {
+      lock(this) {
+	velocity = _lastTranslate * rate;
+	frame.body.AngularVelocity = (float)(-_lastRotate * rate);
+      }
+    }
+    
+    public override void flush() { 
+      //
+    }   
 
-	  Graphics.Rectangle fluke = new Graphics.Rectangle(new Graphics.Point(17, -10), 
-		  new Graphics.Point(23, 10));
-	  fluke.color = Color("green");
-	  fluke.draw(robotFrame);
-	  
-	  // Just the fill, to see outline of bounding box:
-	  robotFrame.fill = null;
-	  // FIXME: something not closing correctly in render when :
-	  //robotFrame.color = null;
-	  robotFrame.outline = Color("lightgrey");
-	  robotFrame.draw(window);
-	  thread = new Thread(new ThreadStart(window.run));
-	  thread.IsBackground = true;
-	  thread.Start();
+    public override void penDown(string color) { 
+      frame.outline = new Graphics.Color(color);
+      frame.penDown();
+    }   
+
+    public override Graphics.Line penUp() { 
+      return frame.penUp();
+    }   
+
+    public override Graphics.Picture takePicture(string mode="jpeg") { // simscribbler
+      double view_angle = 60.0; // degrees
+      double max_distance = 20.0;
+      float MeterInPixels = 64.0f;
+      Graphics.Picture picture = new Graphics.Picture(256, 192, makeColor(0, 0, 0));
+      lock (robot) {
+	double [] distance = new double[256];
+	Graphics.Color [] colors = new Graphics.Color[256];
+	Graphics.Point p1 = frame.getScreenPoint(new Graphics.Point(25, 0));
+	for (int i = 0; i < 256; i++) {
+	  var v = Graphics.VectorRotate(Graphics.Vector(max_distance * MeterInPixels, 0), 
+				(float)(((i/256.0) * view_angle) - view_angle/2.0) * Math.PI/180.0);
+	  Graphics.Point p2 = frame.getScreenPoint(new Graphics.Point(25 + v.X, v.Y));
+	  simulation.window.canvas.world.RayCast((fixture, v1, v2, hit) => {  
+                       distance[i] = Math.Min(hit, max_distance)/max_distance; /// 10 x car
+                       //colors[i] = ((Graphics.Shape)fixture.UserData).fill;
+  	               return 1; 
+                   }, 
+	    Graphics.Vector((float)(p1.x/MeterInPixels), (float)(p1.y/MeterInPixels)), 
+	    Graphics.Vector((float)(p2.x/MeterInPixels), (float)(p2.y/MeterInPixels)));
 	}
+	for (int i = 0; i < 256; i++) {
+	  if (distance[i] > 0) {
+	    for (int j = 0; j < 192; j++) {
+	      //Console.WriteLine(colors[i]);
+	      int g = 256 - (int)Math.Min(distance[i] * 12500, 256);
+	      picture.setColor(i, j, new Graphics.Color(g, g, g));
+	    }
+	  }
+	}
+      }
+      return picture;
+    }
+    
+    public override void setup() {
+    }
+    
+    public override string getName() {
+      return name;
+    }
+    
+    public override List getIRMessage() {
+      return null;
+    }
+    
+    public override void setCommunicate() {
+    }
+    
+    public override void sendIRMessage(string data) {
+    }
+    
+    public override List getBlob() {
+      return null;
+    }
+    
+    public override object getData(params int [] position) {
+      return null;
+    }
+    
+    public override void setData(int position, int value) {
+    }
+    
+    public override PythonDictionary getAll() {
+      return null;
+    }
+    
+    public override PythonDictionary getInfo() {
+      return null;
+    }
+    
+    public override object getObstacle(params object [] position) {
+      return null;
+    }
+    
+    public override object getLight(params object [] position) {
+      return null;
+    }
+    
+    public override object getIR(params object [] positions) {
+      lock (this) {
+	foreach (object position in positions) {
+	  if (position is int) {
+	    if (readings.Contains((int)position)) {
+	      return readings[position];
+	    }
+	  }
+	}
+      }
+      return null;
+    }
+    
+    public override object getBright(string window = null) {
+      return null;
+    }
+    
+    public override object getBright(int window) {
+      return null;
+    }
+    
+    public override object getLine(params object [] position) {
+      return null;
+    }
+    
+    public override object get(string sensor="all") {
+      return null;
+    }
+    
+    public override object get(string sensor="all", params object [] position) {
+      return null;
+    }
+    
+    public override string getPassword() {
+      return "";
+    }
+    
+    public override PythonDictionary getConfig() {
+      return new PythonDictionary();
+    }
+    
+    public override int getStall() {
+      return stall ? 1 : 0; 
+    }
+    
+    public override double getBattery() {
+      return battery;
+    }
+    
+    public override void setLED(string position, object value) {
+    }
+    
+    public override void setLEDFront(object value) {
+    }
+    
+    public override void setLEDBack(double value) {
+    }
+    
+    public override void setEchoMode(int value) {
+    }
+    
+    public override void setName(string name) {
+	  this.name = name;
+    }
+    
+    public override void setIRPower(int power) {
+    }
+    
+    public override void setWhiteBalance(object value) {
+    }
+    
+    public override void setForwardness(object value) {
+    }
+    
+    public override void setVolume(object volume) {
+    }
+    
+    public override void setPassword(string password) {
+    }
+    
   }
 
   public class Scribbler: Robot {
-    public SerialPort serial;
+    public SerialPort serial = null;
     double [] _fudge  = new double[4];
     double [] _oldFudge = new double[4];
     public string dongle;
@@ -1683,8 +2055,6 @@ public static class Myro {
     public byte [] gray_header = null;
     public byte emitters = 0x1 | 0x2 | 0x4;
     
-    private double _lastTranslate;
-    private double _lastRotate;
     private byte [] _lastSensors;
     
     //static byte SOFT_RESET=33;
@@ -1830,13 +2200,13 @@ public static class Myro {
         try {
           serial.Open();
         } catch {
-          Console.WriteLine(String.Format("ERROR: unable to open '{0}'", 
-                  port));
-		  serial = null;
-          return;
+          Console.Error.WriteLine(String.Format("ERROR: unable to open port '{0}'", 
+						port));
+	  serial = null;
         }
       }
-      setup();
+      if (serial != null)
+	setup();
     }
     
     public override void setup() {
@@ -1995,7 +2365,7 @@ public static class Myro {
       return ints;
     }
 
-    byte [] GetBytes(byte value, int bytes=1) {
+    byte [] GetBytes(byte value, int bytes) {
       byte [] retval = null;
       lock (this) { // lock robot
 	write_packet(value);
@@ -2005,7 +2375,7 @@ public static class Myro {
       return retval;
     }
 
-    List GetWord(byte value, int bytes=1) {
+    List GetWord(byte value, int bytes) {
       List retval = new List();
       byte [] retvalBytes;
       lock (this) { // lock robot
@@ -2374,7 +2744,7 @@ public static class Myro {
     } else if ((string)position == "front") {
       setLEDFront(value);
     } else if ((string)position == "back") {
-      setLEDBack((double)value);
+      setLEDBack(System.Convert.ToDouble(value));
     } else if ((string)position == "all") {
       if (isTrue(value)) 
         set(Scribbler.SET_LED_ALL_ON);
@@ -2589,13 +2959,7 @@ public static class Myro {
       return retDict;
     }
     
-    public override void move(double translate, double rotate) {
-      _lastTranslate = translate;
-      _lastRotate = rotate;
-      adjustSpeed();
-    }
-    
-    public void adjustSpeed() {
+    public override void adjustSpeed() {
       double left  = Math.Min(Math.Max(_lastTranslate - _lastRotate, -1), 1);
       double right  = Math.Min(Math.Max(_lastTranslate + _lastRotate, -1), 1);
       byte leftPower = (byte)((left + 1.0) * 100.0);
@@ -2773,8 +3137,17 @@ public static class Myro {
         }
       } 
     }
-  
-    public void flush() { 
+
+    public override bool isConnected()
+    {
+      if (serial == null) 
+	return false;
+      return serial.IsOpen;
+    }
+
+    public override void flush() { 
+      if (! isConnected()) 
+	return;
       byte [] bytes = new byte[1];
       lock(serial) {
         serial.DiscardInBuffer();
@@ -3292,6 +3665,9 @@ public static class Myro {
     // make a tuple from an array
     return new PythonTuple(items);
   }
+  public static void setColor(Graphics.Pixel pixel, Graphics.Color c) {
+    pixel.setColor(c);
+  }
   public static void setRGB(Graphics.Pixel pixel, PythonTuple rgb) {
     pixel.setRGB((byte)rgb[0], (byte)rgb[1], (byte)rgb[2]);
   }
@@ -3366,6 +3742,10 @@ public static class Myro {
     return Graphics.getWindow();
   }
 
+  public static Simulation getSimulation() {
+    return Myro.simulation;
+  }
+
   public static PythonTuple getMouse() {
     return Graphics.getMouse();
   }
@@ -3390,29 +3770,29 @@ public static class Myro {
     Graphics.run();
   }
 
-  public static void run(PythonFunction function) {
+  public static void run(Func<object> function) {
     Graphics.run(function);
   }
 
   // Callbacks:
 
-  public static void onMouseUp(PythonFunction function) {
+  public static void onMouseUp(Func<object,Graphics.Event,object> function) {
     Graphics.onMouseUp(function);
   }
 
-  public static void onMouseDown(PythonFunction function) {
+  public static void onMouseDown(Func<object,Graphics.Event,object> function) {
     Graphics.onMouseDown(function);
   }
 
-  public static void onMouseMovement(PythonFunction function) {
+  public static void onMouseMovement(Func<object,Graphics.Event,object> function) {
     Graphics.onMouseMovement(function);
   }
 
-  public static void onKeyPress(PythonFunction function) {
+  public static void onKeyPress(Func<object,Graphics.Event,object> function) {
     Graphics.onKeyPress(function);
   }
 
-  public static void onKeyRelease(PythonFunction function) {
+  public static void onKeyRelease(Func<object,Graphics.Event,object> function) {
     Graphics.onKeyRelease(function);
   }
 
@@ -3806,8 +4186,88 @@ public static class Myro {
     frequencies["c8"] = 4186.0;
   }
 
+  /*
+  public class StringComparer: IComparer<string> {
+    public int Compare(string x, string y) {
+      if (x == null) {
+	if (y == null) {
+	  return 0;
+	} else {
+	  return -1;
+	}
+      } else {
+	if (y == null) {
+	  return 1;
+	} else {
+	  int retval = x.Length.CompareTo(y.Length);
+	  if (retval != 0) {
+	    return retval;
+	  } else {
+	    return x.CompareTo(y);
+	  }
+	}
+      }
+    }
+  }
+  */
+
+  static int getPivotPoint(List input, int begPoint, int endPoint) {
+    int pivot = begPoint/2;
+    int m = begPoint+1;
+    int n = endPoint;
+    while ((m < endPoint) && 
+	   (((string)input[pivot]).CompareTo((string)input[m]) >= 0)) {
+      m++;
+    }
+    
+    while ((n > begPoint) && 
+	   (((string)input[pivot]).CompareTo((string)input[n]) <= 0)) {
+      n--;
+    }
+    while (m < n) {
+      string temp = (string)input[m];
+      input[m] = input[n];
+      input[n] = temp;
+      while ((m < endPoint) && 
+	     (((string)input[pivot]).CompareTo((string)input[m]) >= 0)) {
+	m++;
+      }
+      while ((n > begPoint) && 
+	     (((string)input[pivot]).CompareTo((string)input[n]) <= 0)) {
+	n--;
+      }
+    }
+    if (pivot != n) {
+      string temp2 = (string)input[n];
+      input[n] = input[pivot];
+      input[pivot] = temp2;
+      
+    }
+    return n;
+  }
+
+  static void QuickSort(List input, int beg, int end) {
+    // In-place string sort
+    if (end == beg) {
+      return;
+    } else {
+      int pivot = getPivotPoint(input, beg, end);
+      if (pivot > beg)
+	QuickSort(input, beg, pivot-1);
+      if (pivot < end)
+	QuickSort(input, pivot+1, end);
+    }
+    return;
+  }
+  
+  static List Sort(List list) {
+    // in-place String sort
+    QuickSort(list, 0, list.Count - 1);
+    return list;
+  }
+
   public static List getVoiceNames() {
-    return voices.values();
+    return Sort(voices.values());
   }
 
   public static List getVoices() {
@@ -3926,7 +4386,7 @@ public static class Myro {
   }
 
   public static string getNoteFromFrequency(int frequency) {
-    return getNoteFromFrequency((double)frequency);
+    return getNoteFromFrequency(System.Convert.ToDouble(frequency));
   }
 
   public static string getNoteFromFrequency(double frequency) {
@@ -3956,13 +4416,13 @@ public static class Myro {
     System.IO.StreamWriter fp = new System.IO.StreamWriter(filename, append); 
     foreach (IList tup in song) {
       if (tup.Count == 2) {
-    double f = (double)tup[0]; 
-    double d = (double)tup[1];
+	double f = System.Convert.ToDouble(tup[0]); 
+	double d = System.Convert.ToDouble(tup[1]);
     fp.WriteLine("{0} {1}", getNoteFromFrequency(f), d);
       } else if (tup.Count == 3) {
-    double f1 = (double)tup[0]; 
-    double f2 = (double)tup[1]; 
-    double d = (double)tup[2];
+	double f1 = System.Convert.ToDouble(tup[0]); 
+	double f2 = System.Convert.ToDouble(tup[1]); 
+	double d = System.Convert.ToDouble(tup[2]);
     fp.WriteLine("{0} {1} {2}", getNoteFromFrequency(f1),
              getNoteFromFrequency(f2), d);
     fp.Close();
@@ -3992,13 +4452,13 @@ public static class Myro {
     string text = "";
     foreach(IList tup in song) {
       if (tup.Count == 2) {
-    double f = (double)tup[0]; 
-    double d = (double)tup[1];
+	double f = System.Convert.ToDouble(tup[0]); 
+	double d = System.Convert.ToDouble(tup[1]);
     text += String.Format("{0} {1}; ", getNoteFromFrequency(f), d);
       } else if (tup.Count == 3) {
-    double f1 = (double)tup[0]; 
-    double f2 = (double)tup[1]; 
-    double d = (double)tup[2];
+	double f1 = System.Convert.ToDouble(tup[0]); 
+	double f2 = System.Convert.ToDouble(tup[1]); 
+	double d = System.Convert.ToDouble(tup[2]);
     text += String.Format("{0} {1} {2}; ", 
                   getNoteFromFrequency(f1),
                   getNoteFromFrequency(f2), d);

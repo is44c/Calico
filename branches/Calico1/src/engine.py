@@ -22,6 +22,7 @@ from __future__ import print_function
 import clr
 import traceback
 import glob
+import sys
 import os
 
 import Microsoft.Scripting
@@ -118,11 +119,11 @@ class Engine(object):
     def stop(self):
         pass
 
-    def getVariables(self):
-        """
-        Get top-level variables.
-        """
+    def getCompletions(self, starts_with):
         return []
+
+    def getVariableParts(self, variable):
+        return variable.split(".")
 
     def tryGetVariable(self, variable):
         return (False, None)
@@ -132,7 +133,6 @@ class DLREngine(Engine):
         self.last_retval = None
         self.compiler_options = None
         self.engine = self.manager.runtime.GetEngine(self.dlr_name)
-        #Python.SetTrace(engine, OnTraceBack); 
         # Load mscorlib.dll:
         self.engine.Runtime.LoadAssembly(
             System.Type.GetType(System.String).Assembly)
@@ -145,6 +145,10 @@ class DLREngine(Engine):
         # ---------------------------------------
         self.engine.Runtime.LoadAssembly(System.Type.GetType(
                 System.Diagnostics.Debug).Assembly)
+
+    def onTraceback(self, frame, result, payload):
+        print(frame.f_code.co_filename, frame.f_lineno, result, payload)
+        return self.onTraceback
 
     def set_redirects(self, stdout, stderr, stdin): # textviews
         super(DLREngine, self).set_redirects(stdout, stderr, stdin)
@@ -168,7 +172,8 @@ class DLREngine(Engine):
         lines = text.split("\n")
         line_count = len(lines)
         if line_count == 1:
-            text = "from __future__ import print_function; " + text
+            if self.dlr_name == "py":
+                text = "from __future__ import print_function; " + text
             sctype = Microsoft.Scripting.SourceCodeKind.InteractiveCode
             source = self.engine.CreateScriptSourceFromString(text, sctype)
             return (source.GetCodeProperties() == 
@@ -180,12 +185,18 @@ class DLREngine(Engine):
         sctype = Microsoft.Scripting.SourceCodeKind.InteractiveCode
         source = self.engine.CreateScriptSourceFromString(text, sctype)
         try:
-            source.Compile(self.compiler_options)
+            if self.compiler_options:
+                source.Compile(self.compiler_options)
+            else:
+                source.Compile()
         except:
             sctype = Microsoft.Scripting.SourceCodeKind.Statements
             source = self.engine.CreateScriptSourceFromString(text, sctype)
             try:
-                source.Compile(self.compiler_options)
+                if self.compiler_options:
+                    source.Compile(self.compiler_options)
+                else:
+                    source.Compile()
             except:
                 traceback.print_exc()
                 return False
@@ -216,13 +227,24 @@ class DLREngine(Engine):
 
     def execute_file(self, filename):
         self.manager.calico.last_error = ""
+        #IronPython.Hosting.Python.GetSysModule(self.engine).settrace(self.trace)
         source = self.engine.CreateScriptSourceFromFile(filename)
         try:
-            source.Compile(self.compiler_options)
+            if self.compiler_options:
+                source.Compile(self.compiler_options)
+            else:
+                source.Compile()
         except:
             traceback.print_exc()
             return False
         try:
+            #IronPython.Modules.SysModule.settrace(self.trace)
+            #self.engine.GetSysModule().settrace(trace)
+            #self.engine.Execute("import sys; s = sys.settrace", 
+            #                    self.manager.scope)
+            #settrace = self.manager.scope.GetVariable("s")
+            #settrace(self.trace)
+            #self.engine.GetSysModule().settrace(self.trace)
             source.Execute(self.manager.scope)
         except Exception, e:
             if "Thread was being aborted" in str(e.message):
@@ -230,11 +252,9 @@ class DLREngine(Engine):
             else:
                 traceback.print_exc()
 
-    def getVariables(self):
-        """
-        Get top-level variables.
-        """
-        return self.manager.scope.GetVariableNames()
+    def getCompletions(self, starts_with):
+        return [x for x in self.manager.scope.GetVariableNames() if x.startswith(starts_with)]
 
     def tryGetVariable(self, variable):
         return self.manager.scope.TryGetVariable(variable)
+
