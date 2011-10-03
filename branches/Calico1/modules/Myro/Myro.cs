@@ -55,10 +55,10 @@ public static class Myro {
   public static Robot robot;
   public static Simulation simulation;
   public readonly static Computer computer = new Computer();
+  public static string os_name = null;
   static string dialogResponse = null;
   static string REVISION = "$Revision: $";
   static string startup_path = null;
-  static string os_name = null;
   static string speech_name = "default";
   static bool warn_missing_speak = true;
   static PythonDictionary voices = new PythonDictionary();
@@ -814,6 +814,8 @@ public static class Myro {
 	}
 	if (!window.IsRealized) return;
 	window.step(.1);
+	if (Myro.os_name == "darwin")
+	  wait(.1);
       }
     }
   }
