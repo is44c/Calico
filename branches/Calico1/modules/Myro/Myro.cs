@@ -686,6 +686,7 @@ public static class Myro {
     public List<Robot> robots = new List<Robot>();
     public List<Graphics.Shape> lights = new List<Graphics.Shape>();
     public Graphics.Color groundColor = new Graphics.Color(24,155,28);
+	public double extra_simulation_time = 0.1;
 
     public Simulation() : this(640, 480) {
     }
@@ -812,14 +813,14 @@ public static class Myro {
 	    }
 	  }
 	}
-	if (!window.IsRealized) return;
+	if (!window.IsRealized) 
+	  return;
 	window.step(.1);
-	if (Myro.os_name == "darwin")
-	  wait(.1);
-      }
-    }
+	wait(extra_simulation_time);
+	  }
+	}
   }
-
+  
   public static void uninit() {
     if (Myro.robot is Scribbler) {
       if (((Scribbler)(Myro.robot)).serial is SerialPort) {
