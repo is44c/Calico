@@ -479,7 +479,7 @@ class CalicoProject(object):
     def increase_fontsize(self, obj, event):
         def invoke(sender, args):
             pangofont = self.get_fontname()
-            fontName, fontSize = pangofont(" ", 1)
+            fontName, fontSize = pangofont.split(" ", 1)
             self.config.set("calico.font", fontName)
             self.config.set("calico.fontsize", min(int(fontSize) + 1, 36))
             if self.shell:
@@ -493,7 +493,7 @@ class CalicoProject(object):
     def decrease_fontsize(self, obj, event):
         def invoke(sender, args):
             pangofont = self.get_fontname()
-            fontName, fontSize = pangofont(" ", 1)
+            fontName, fontSize = pangofont.split(" ", 1)
             self.config.set("calico.font", fontName)
             self.config.set("calico.fontsize", max(int(fontSize) - 1, 5))
             if self.shell:
@@ -648,7 +648,7 @@ class CalicoProject(object):
             actionHandler(action, **data)
 
 # Let's start!
-version = "1.1.2"
+version = "1.1.3"
 if "--help" in args:
     print()
     print(_("Calico Project, Version %s, on %s") % (version,
