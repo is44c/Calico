@@ -21,13 +21,13 @@
 \begin{document}
 
 
-\conferenceinfo{WXYZ '05}{date, City.} 
+\conferenceinfo{SPLASH DLS'13}{October 28, 2013, Indianapolis, Indiana, USA.} 
 \copyrightyear{2013} 
-\copyrightdata{[to be supplied]} 
+\copyrightdata{ACM} 
 
 
-\titlebanner{banner above paper title}        % These are ignored unless
-\preprintfooter{short description of paper}   % 'preprint' option specified.
+\titlebanner{Submitted to SPLASH DLS'13; Under review}        % These are ignored unless
+%%\preprintfooter{short description of paper}   % 'preprint' option specified.
 
 
 \title{Calico: An Ecosystem for Dynamic Languages}
@@ -37,18 +37,15 @@
 \authorinfo{Douglas S. Blank}
            {Bryn Mawr College\\Department of Computer Science\\Bryn Mawr, PA 19010}
            {dblank@cs.brynmawr.edu}
-\authorinfo{Name2}
+\authorinfo{Mark R. Russo}
            {Affiliation2/3}
            {Email2/3}
 
-
 \maketitle
-
 
 \begin{abstract}
 This is the text of the abstract.
 \end{abstract}
-
 
 \category{CR-number}{subcategory}{third-level}
 
@@ -235,15 +232,19 @@ block language Calico Jigsaw.
 
 The Jigsaw editor provides a palette of blocks that are dragged onto a
 canvas using the mouse and connected to form an executable program
-[Fig. J]. Jigsaw blocks may have properties that can be assigned
+Figure~\ref{jigsaw1}. Jigsaw blocks may have properties that can be assigned
 values by the programmer. For example, the Jigsaw ``repeat'' block has
 a Repetitions property that can be assigned a numeric value indicating
 the number of times an inner stack of blocks should be executed. But
 beyond the standard functionality expected in any block language,
 Jigsaw has several additional features that we feel make it unique.
 
-
-Fig J: Jigsaw in action.
+\begin{figure}[h!]
+  \centering
+     \includegraphics[width=0.5\textwidth]{jigsaw1.eps}
+  \caption{Jigsaw in action.}
+  \label{jigsaw1}
+\end{figure}
 
 The first important feature worth noting is that Jigsaw is built as a
 wrapper around IronPython. Even though Jigsaw is written in C\#, most
@@ -255,12 +256,17 @@ consequence of this design decision is that Python syntax often can be
 used directly in Jigsaw. For example, instead of entering primitive
 values for block properties, Python expressions can be substituted
 instead. The conditional statement in a Jigsaw ``if'' block is a
-boolean expression written using Python syntax [Fig. J+1]. We believe
+boolean expression written using Python syntax Figure~\ref{jigsaw2}. We believe
 that this approach better prepares the student for a smooth transition
 to higher level languages.
 
 
-Fig J+1: Jigsaw blocks leverage IronPython expressions.
+\begin{figure}[h!]
+  \centering
+    \includegraphics[width=75mm]{jigsaw2.eps} 
+  \caption{Jigsaw blocks leverage IronPython expressions.}
+  \label{jigsaw2}
+\end{figure}
 
 Although many Jigsaw statements and expressions are borrowed from
 IronPython, Jigsaw implements it’s own program control
@@ -271,7 +277,7 @@ along with local and global namespaces, an idea that is borrowed from
 Python.
 
 Another unique feature of Jigsaw is that it has a form of multitasking
-baked in to its execution engine [Fig. J+2]. A Jigsaw program begins
+baked in to its execution engine Figure~\ref{jigsaw3}. A Jigsaw program begins
 execution at a ``when script starts'' block, and proceeds down the
 attached stack of blocks, executing each in sequence. But a Jigsaw
 program can contain any number of ``when script starts'' blocks, which
@@ -279,7 +285,12 @@ all begin execution at the same time. As a result, multiple block
 stacks a Jigsaw program can execute in parallel.
 
 
-Fig. J+2: A Jigsaw programming running multiple block stacks in parallel
+\begin{figure}[h!]
+  \centering
+    \includegraphics[width=75mm]{jigsaw3.eps} 
+  \caption{A Jigsaw programming running multiple block stacks in parallel}
+  \label{jigsaw3}
+\end{figure}
 
 In fact, the parallelism implemented in Jigsaw is a form of
 cooperative multitasking, not the more common preemptive style. Jigsaw
@@ -299,7 +310,7 @@ model.
 For example, Calico Jigsaw allows the export of any Jigsaw script to
 Calico Python (described below). However, as it must convert Jigsaw's
 controls to those of the Python language, the semantics must also be
-converted. Figure J-3 shows the above Jigsaw program exported to
+converted. Figure~\ref{jigsaw4} shows the above Jigsaw program exported to
 Python. Python does not have the built-in ability to run functions
 simultaneously as does Jigsaw. But, the Calico Myro module (described
 below) includes a friendly interface to using threads through the
@@ -308,11 +319,14 @@ program to the proper form. Notice, however, that the Output tab
 indicates that Python's threads do not guarantee even multitasking as
 the 'Left' and 'Right' outputs are not perfectly interleaved.
 
-\includegraphics[width=75mm]{jigsaw1.eps} 
-
-Fig. J+3: The Jigsaw program from Figure J+2 exported Python. Note
+\begin{figure}[h!]
+  \centering
+    \includegraphics[width=75mm]{jigsaw4.eps} 
+  \caption{The Jigsaw program from Figure~\ref{jigsaw3} exported Python. Note
 that the blocks have been converted to functions (main1, and main2)
-but the output is not guaranteed to run in lockstep.
+but the output is not guaranteed to run in lockstep.}
+  \label{jigsaw4}
+\end{figure}
 
 \subsection{Calico Python}
 
@@ -401,7 +415,8 @@ Examples of interop.
 
 \begin{verbatim}
 scheme> (define pytuple 
-          (calico.Evaluate "lambda *args: args" "python"))
+          (calico.Evaluate "lambda *args: args" 
+                           "python"))
 Ok
 scheme> (pytuple 1 2 3)
 (1, 2, 3)
@@ -412,7 +427,8 @@ Ok
 
 \begin{verbatim}
 scheme> (define pylist 
-           (calico.Evaluate "lambda *args: list(args)" "python"))
+           (calico.Evaluate "lambda *args: list(args)" 
+                            "python"))
 Ok
 scheme> (pylist 1 2 3)
 [1, 2, 3]
