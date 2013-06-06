@@ -224,15 +224,15 @@ Block-based programming languages have facilitated our ability to
 introduce computer programming to novice programmers. Perhaps the most
 notable example of this is Scratch [http://scratch.mit.edu]. Building
 executable programs by plugging together virtual blocks is a concept
-that is much less intimidating to [a]beginners, especially when
-compared to the precise syntactical rules demanded by many modern
+that is much less intimidating to a beginner, especially when
+compared with the precise syntactical rules demanded by many modern
 programming languages. For this reason we sought to include a
 block-based language as part of the Calico ecosystem. We named our
 block language Calico Jigsaw.
 
 The Jigsaw editor provides a palette of blocks that are dragged onto a
 canvas using the mouse and connected to form an executable program
-Figure~\ref{jigsaw1}. Jigsaw blocks may have properties that can be assigned
+(Figure~\ref{jigsaw1}). Jigsaw blocks may have properties that can be assigned
 values by the programmer. For example, the Jigsaw ``repeat'' block has
 a Repetitions property that can be assigned a numeric value indicating
 the number of times an inner stack of blocks should be executed. But
@@ -246,7 +246,7 @@ Jigsaw has several additional features that we feel make it unique.
   \label{jigsaw1}
 \end{figure}
 
-The first important feature worth noting is that Jigsaw is built as a
+The first feature worth noting is that Jigsaw is built as a
 wrapper around IronPython. Even though Jigsaw is written in C\#, most
 Jigsaw statement blocks are implemented as Python statements. This
 integration between C\# and IronPython is possible with help from the
@@ -255,8 +255,8 @@ that are ready to be evaluated when the Jigsaw program runs. A
 consequence of this design decision is that Python syntax often can be
 used directly in Jigsaw. For example, instead of entering primitive
 values for block properties, Python expressions can be substituted
-instead. The conditional statement in a Jigsaw ``if'' block is a
-boolean expression written using Python syntax Figure~\ref{jigsaw2}. We believe
+directly. The IfTest conditional statement in a Jigsaw ``if'' block can be a
+boolean expression written using Python syntax (Figure~\ref{jigsaw2}). We believe
 that this approach better prepares the student for a smooth transition
 to higher level languages.
 
@@ -267,43 +267,45 @@ to higher level languages.
   \label{jigsaw2}
 \end{figure}
 
-Although many Jigsaw statements and expressions are borrowed from
+Although Jigsaw statements and expressions are borrowed from
 IronPython, Jigsaw implements it’s own program control
 structures. Blocks that provide looping, conditionals and procedures
 are all implemented entirely in Mono C\#. Program execution is managed
-using Jigsaw’s own implementation of call stacks and stack frames
+using Jigsaw's own implementation of call stacks and stack frames
 along with local and global namespaces, an idea that is borrowed from
 Python.
 
 Another unique feature of Jigsaw is that it has a form of multitasking
-baked in to its execution engine Figure~\ref{jigsaw3}. A Jigsaw program begins
+baked in to its execution engine. A Jigsaw program begins
 execution at a ``when script starts'' block, and proceeds down the
 attached stack of blocks, executing each in sequence. But a Jigsaw
 program can contain any number of ``when script starts'' blocks, which
 all begin execution at the same time. As a result, multiple block
-stacks a Jigsaw program can execute in parallel.
+stacks a Jigsaw program can execute in parallel. See Figure~\ref{jigsaw3} 
+for an example. Blocks colors white are currently being executed. 
 
 \begin{figure}[h!]
   \centering
     \includegraphics[width=75mm]{jigsaw3.eps} 
-  \caption{A Jigsaw programming running multiple block stacks in parallel}
+  \caption{A Jigsaw program running multiple block stacks in parallel.}
   \label{jigsaw3}
 \end{figure}
 
-In fact, the parallelism implemented in Jigsaw is a form of
+The parallelism implemented in Jigsaw is a form of
 cooperative multitasking, not the more common preemptive style. Jigsaw
 executes multiple block stacks in a round-robin fashion. It is
 important to note that the execution of one block does not necessarily
 complete before the Jigsaw engine switches to a block in another
 stack. Indeed, multiple blocks in different stacks can execute at the
-same time. This is possible because the execution element of every
-block is implemented as a C\# Enumerator, which is carefully designed
-to yield at appropriate times throughout the execution task. With this
-style of multitasking a novice programmer can assemble a program
-easily that, say, draws graphics to the screen while monitoring a
-sensor in the ``background.'' This style of multitasking avoids the
-potential for subtle bugs that often crop up with a true preemptive
-model.
+same time. This is possible because block execution is implemented 
+as a C\# Enumerator, which is carefully designed for each block type
+to yield at safe places throughout its execution. With this
+approach a novice programmer can assemble a program that
+multitasks while avoiding the subtle bugs that often crop 
+up with a true preemptive model. For example, a ``background'' task
+that continuously monitors a sensor and updates a global variable 
+can safely coexist with a second loop that uses the value of the global
+variable to draw a graphic on the screen.
 
 Calico Jigsaw allows the export of any Jigsaw script to Calico Python
 (described below). However, as it must convert Jigsaw's controls to
@@ -312,7 +314,7 @@ converted. Figure~\ref{jigsaw4} shows the above Jigsaw program as it
 appears after it has been exported to Python. Python does not have the
 built-in ability to run functions simultaneously as does Jigsaw. But,
 the Calico Myro module (described below) includes a friendly interface
-to using threads through the ``doTogether'' function, and so the
+for using threads through the ``doTogether'' function, and so the
 export translates the Jigsaw program to the proper form. Notice,
 however, that the Output tab indicates that Python's threads do not
 guarantee even multitasking as the 'Left' and 'Right' outputs are not
@@ -322,7 +324,7 @@ perfectly interleaved.
   \centering
     \includegraphics[width=75mm]{jigsaw4.eps} 
   \caption{The Jigsaw program from Figure~\ref{jigsaw3} exported
-    Python. Note that the blocks have been converted to functions
+    as Python. Note that the blocks have been converted to functions
     (main1, and main2) but the output is not guaranteed to run in
     lockstep as it does with Jigsaw's multitasking.}
   \label{jigsaw4}
