@@ -14,32 +14,32 @@
 %% sudo apt-get install texlive-fonts-recommended
 %% make
 
-
 \usepackage{amsmath}
 \usepackage{graphicx}
 
 \begin{document}
 
-
 \conferenceinfo{SPLASH DLS'13}{October 28, 2013, Indianapolis, Indiana, USA.} 
 \copyrightyear{2013} 
 \copyrightdata{ACM} 
 
-
 \titlebanner{Submitted to SPLASH DLS'13; Under review}        % These are ignored unless
 %%\preprintfooter{short description of paper}   % 'preprint' option specified.
-
 
 \title{Calico: An Ecosystem for Dynamic Languages}
 %% \subtitle{Subtitle Text, if any}
 
-
 \authorinfo{Douglas S. Blank}
            {Bryn Mawr College\\Department of Computer Science\\Bryn Mawr, PA 19010}
            {dblank@cs.brynmawr.edu}
-\authorinfo{Mark R. Russo}
-           {Affiliation2/3}
-           {Email2/3}
+
+\authorinfo{Mark F. Russo}
+           {Affiliation2}
+           {Email2}
+
+\authorinfo{James B. Marshall}
+           {Affiliation3}
+           {Email3}
 
 \maketitle
 
@@ -214,9 +214,11 @@ to be agnostic to any particular language, or particular use.
 [FIXME] What defines a Calico language? Document, Engine
 
 First-class languages: stepper, breakpoints, share variables, call
-functions, execute/evaluate code and expressions from other languages.
+functions, execute/evaluate code and expressions from other languages,
+import Calico modules as if they were native.
 
-Second-class: naive ports, minimal interoperation.
+Second-class: naive ports, minimal interoperation, possibly unable to
+import modules.
 
 \subsection{Calico Jigsaw}
 
@@ -241,7 +243,7 @@ Jigsaw has several additional features that we feel make it unique.
 
 \begin{figure}[h!]
   \centering
-     \includegraphics[width=0.5\textwidth]{jigsaw1.eps}
+     \includegraphics[width=75mm]{jigsaw1.eps}
   \caption{Jigsaw in action.}
   \label{jigsaw1}
 \end{figure}
@@ -259,7 +261,6 @@ instead. The conditional statement in a Jigsaw ``if'' block is a
 boolean expression written using Python syntax Figure~\ref{jigsaw2}. We believe
 that this approach better prepares the student for a smooth transition
 to higher level languages.
-
 
 \begin{figure}[h!]
   \centering
@@ -284,7 +285,6 @@ program can contain any number of ``when script starts'' blocks, which
 all begin execution at the same time. As a result, multiple block
 stacks a Jigsaw program can execute in parallel.
 
-
 \begin{figure}[h!]
   \centering
     \includegraphics[width=75mm]{jigsaw3.eps} 
@@ -307,24 +307,26 @@ sensor in the ``background.'' This style of multitasking avoids the
 potential for subtle bugs that often crop up with a true preemptive
 model.
 
-For example, Calico Jigsaw allows the export of any Jigsaw script to
-Calico Python (described below). However, as it must convert Jigsaw's
-controls to those of the Python language, the semantics must also be
-converted. Figure~\ref{jigsaw4} shows the above Jigsaw program exported to
-Python. Python does not have the built-in ability to run functions
-simultaneously as does Jigsaw. But, the Calico Myro module (described
-below) includes a friendly interface to using threads through the
-``doTogether'' function, and so the export translates the Jigsaw
-program to the proper form. Notice, however, that the Output tab
-indicates that Python's threads do not guarantee even multitasking as
-the 'Left' and 'Right' outputs are not perfectly interleaved.
+Calico Jigsaw allows the export of any Jigsaw script to Calico Python
+(described below). However, as it must convert Jigsaw's controls to
+those of the Python language, the semantics must also be
+converted. Figure~\ref{jigsaw4} shows the above Jigsaw program as it
+appears after it has been exported to Python. Python does not have the
+built-in ability to run functions simultaneously as does Jigsaw. But,
+the Calico Myro module (described below) includes a friendly interface
+to using threads through the ``doTogether'' function, and so the
+export translates the Jigsaw program to the proper form. Notice,
+however, that the Output tab indicates that Python's threads do not
+guarantee even multitasking as the 'Left' and 'Right' outputs are not
+perfectly interleaved.
 
 \begin{figure}[h!]
   \centering
     \includegraphics[width=75mm]{jigsaw4.eps} 
-  \caption{The Jigsaw program from Figure~\ref{jigsaw3} exported Python. Note
-that the blocks have been converted to functions (main1, and main2)
-but the output is not guaranteed to run in lockstep.}
+  \caption{The Jigsaw program from Figure~\ref{jigsaw3} exported
+    Python. Note that the blocks have been converted to functions
+    (main1, and main2) but the output is not guaranteed to run in
+    lockstep as it does with Jigsaw's multitasking.}
   \label{jigsaw4}
 \end{figure}
 
@@ -337,7 +339,7 @@ Based on IronPython.
 \subsection{Calico Scheme}
 
 We wrote a properly tail-recursive implementation of Scheme from
-scratch and integrated into Calico.  Tail-recursion is an idiom that
+scratch and integrated it into Calico.  Tail-recursion is an idiom that
 students often discover on their own as a way of implementing
 iteration (Blank and Kumar, 2010). Unfortunately, most of the
 languages commonly used in introductory courses (for example, Java,
@@ -424,7 +426,6 @@ Ok
 \end{verbatim}
 
 
-
 \begin{verbatim}
 scheme> (define pylist 
            (calico.Evaluate "lambda *args: list(args)" 
@@ -437,9 +438,11 @@ Ok
 
 For example, in Python you can call a function written in Scheme.
 
-1. First, write a regular Scheme function
-2. Call the Scheme function in a CLR-compatible function wrapper
-3. Make the wrapper available in the shared environment
+\begin{enumerate}
+\item First, write a regular Scheme function
+\item Call the Scheme function in a CLR-compatible function wrapper
+\item Make the wrapper available in the shared environment
+\end{enumerate}
 
 If one of the languages is not a first class Calico language, they can
 still interoperate. For example, Java is not currently a first class
@@ -464,8 +467,6 @@ Ok
 The value of py\_x is actually value directly from the Java world: a
 java.lang.Integer object. To convert it to a MVM value depends on the
 specifics of the foreign system. In this case, py\_x.intValue().
-
-
 
 \subsection{Current Limitations and Future Work}
 
@@ -556,11 +557,13 @@ constructed.
 
 We rely upon each of the native Calico languages for the following capabilities:
 
-1. Data structures
-2. Program control (conditionals, iterations, etc.)
-3. Files and file access
-4. String functions
-5. Objects and inheritance
+\begin{itemize}
+\item Data structures
+\item Program control (conditionals, iterations, etc.)
+\item Files and file access
+\item String functions
+\item Objects and inheritance
+\end{itemize}
 
 Mouse and keyboard events are not handled by implementing predefined
 functions. The Calico Processing module raises events, which are
@@ -572,11 +575,13 @@ Loops are implemented by handling a timer tick event named onLoop.
 
 Certain predefined fields in Processing are implemented as functions.
 
-1. ''mouseX'' and ''mouseY'' are implemented in Calico Processing as the functions ''mouseX()'' and ''mouseY()''.
-2. ''pmouseX'' and ''pmouseY'' are implemented as ''pmouseX()'' and ''pmouseY()''.
-3. ''width'' and ''height'' are implemented as ''width()'' and ''height()''.
-4. ''focused'' and ''frameCount'' are implemented as ''focused()'' and ''frameCount()''.
-5. ''key'' and ''keyCode'' are implemented as ''key()'' and ''keyCode()''.
+\begin{itemize}
+\item ''mouseX'' and ''mouseY'' are implemented in Calico Processing as the functions ''mouseX()'' and ''mouseY()''.
+\item ''pmouseX'' and ''pmouseY'' are implemented as ''pmouseX()'' and ''pmouseY()''.
+\item ''width'' and ''height'' are implemented as ''width()'' and ''height()''.
+\item ''focused'' and ''frameCount'' are implemented as ''focused()'' and ''frameCount()''.
+\item ''key'' and ''keyCode'' are implemented as ''key()'' and ''keyCode()''.
+\end{itemize}
 
 The result is a pixel-by-pixel faithful representation of the original
 Processing primitives' output. However, combined with the Calico
@@ -600,10 +605,10 @@ creating art, games, and animations in any of the Calico languages.
 
 \section{Conclusion}
 
-\appendix
-\section{Appendix Title}
+%%\appendix
+%%\section{Appendix Title}
 
-This is the text of the appendix, if you need one.
+%%This is the text of the appendix, if you need one.
 
 \acks
 
