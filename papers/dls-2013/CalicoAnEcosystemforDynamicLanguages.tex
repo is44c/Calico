@@ -148,7 +148,7 @@ Requests have been made to add such functionality to Java: JSR-223
 would add language hosting and JSR-292 would add dynamic binding (Wu,
 2010). There are a number of projects underway to make the JVM more
 flexible for use with dynamic languages, including: the Da Vinci
-Machine as the reference implementation of JSR-292; Project Lambda
+Machine \cite{davinci} as the reference implementation of JSR-292; Project Lambda
 adds lambda to the JVM; Project Jigsaw adds supported for importing
 versioned modules; and Nashhorn adds caches for dynamic invokes. When
 complete, these technologies will extend the Java technologies to make
@@ -409,16 +409,29 @@ Written in Calico Python.
 
 \subsection{Performance}
 
+Compared to other dynamic languages, the performances of Calico
+languages ranges from competitive to slow
+\cite{python-benchmark}. Likewise, between Calico languages, there is
+also large performance variability. Some of these differences can be
+mitigated over time with refinements at various levels of
+implementation. For example, Calico Scheme has yet to be converted to
+use the DLR AST. Once that transformation is in place, we expect a 10
+to 100-fold increase in performance. Other differences are likely to
+remain, however. For example, Calico Basic is written in Calico
+Python, so speed improvements will probably be minimal.
+
 \begin{table}[h]\footnotesize
   \centering
-  \begin{tabular}{ r | l }
+  \begin{tabular}{ l | l }
     \hline                        
-    \textbf{Language} & \textbf{Avgerage Time (in Seconds), Factorial of 1000} \\
+    \textbf{Language} & \textbf{Time (in Seconds), Factorial of 1000} \\
     \hline                        
-    Calico Python & time \\
-    Calico Jigsaw & time \\
-    Calico Scheme & time \\
-    Calico Basic & time \\
+    Calico Python                 & time \\
+    Calico Ruby                   & time \\
+    Calico Jigsaw                 & time \\
+    Calico Scheme (recursive)     & time \\
+    Calico Scheme (non-recursive) & time \\
+    Calico Basic                  & time \\
   \end{tabular}
   \caption{Performance comparison between languages.}
   \label{performance}
@@ -654,6 +667,9 @@ P. Q. Smith, and X. Y. Jones. ...reference text...
 \bibitem[]{squeak}
 %% Lists many via VMs, including Squeak
 %% http://en.wikipedia.org/wiki/Comparison_of_application_virtual_machines
+
+\bibitem[]{python-benchmark}
+%% https://ironpython.codeplex.com/wikipage?title=IP27A1VsCPy27Perf&referringTitle=IronPython%20Performance
 
 \end{thebibliography}
 
