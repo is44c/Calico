@@ -36,8 +36,8 @@
            {russomf@gmail.com}
 
 \authorinfo{James B. Marshall}
-           {Affiliation3}
-           {Email3}
+           {Sarah Lawrence College\\Department of Computer Science\\Bronxville, NY 10708}
+           {jmarshall@slc.edu}
 
 \maketitle
 
@@ -112,7 +112,7 @@ executed by their respective virtual machines' runtime.
 
 Although both VMs have served as the foundation for dynamic languages,
 Java does not have a complete and robust official open-source
-implementation. On the other hand, .NET’s virtual machine components,
+implementation. On the other hand, .NET's virtual machine components,
 called the Common Language Infrastructure (CLI), have been clearly
 defined in a pair of Ecma standards, specifically Ecma \#334 and Ecma
 \#335 (Ecma Standards, 2011), and is protected by a promise from
@@ -268,7 +268,7 @@ to higher level languages.
 \end{figure}
 
 Although Jigsaw statements and expressions are borrowed from
-IronPython, Jigsaw implements it’s own program control
+IronPython, Jigsaw implements its own program control
 structures. Blocks that provide looping, conditionals and procedures
 are all implemented entirely in Mono C\#. Program execution is managed
 using Jigsaw's own implementation of call stacks and stack frames
@@ -338,27 +338,58 @@ Based on IronPython.
 
 \subsection{Calico Scheme}
 
-We wrote a properly tail-recursive implementation of Scheme from
-scratch and integrated it into Calico.  Tail-recursion is an idiom that
-students often discover on their own as a way of implementing
-iteration (Blank and Kumar, 2010). Unfortunately, most of the
-languages commonly used in introductory courses (for example, Java,
-Python, and C++) do not handle tail-recursion correctly, which may
-lead to crashes if a student’s program exceeds the language’s
-recursion depth limit. This is seen by students as a bug in their
+We wrote a properly tail-recursive implementation of Scheme from scratch and
+integrated it into Calico.  Tail-recursion is an idiom that students often
+discover on their own as a way of implementing iteration (Blank and Kumar,
+2010). Unfortunately, most of the languages commonly used in introductory
+courses (for example, Java, Python, and C++) do not handle tail-recursion
+correctly, which may lead to crashes if a student's program exceeds the
+language's recursion depth limit. This is seen by students as a bug in their
 code, whereas it is really a limitation of the underlying language
-implementation. Unlike other Scheme implementations for the MVM,
-Calico Scheme does not rely on the underlying call stack of the
-implementation language to manage function calls, nor does it require
-functions to be compiled to Common Language Runtime (CLR)
-bytecode. Consequently, tail calls are handled properly in Calico
-Scheme, as required by the Scheme language specification (Sperber et
-al., 2010), imposing no limit on the depth of the call stack (aside
-from system memory limitations).
+implementation. Unlike other Scheme implementations for the MVM, Calico Scheme
+does not rely on the underlying call stack of the implementation language to
+manage function calls, nor does it require functions to be compiled to Common
+Language Runtime (CLR) bytecode. Consequently, tail calls are handled properly
+in Calico Scheme, as required by the Scheme language specification (Sperber et
+al., 2010), imposing no limit on the depth of the call stack (aside from system
+memory limitations).
 
-Scheme has two forms of a stack-trace when an exception is thrown,
-depending on a user-set config. These are made to mimic those
-stack-traces of Python.
+Our Scheme implementation is itself written in Scheme, utilizing full
+continuation-passing style (CPS).  Because the interpreter is in CPS, adding
+support for new types of control structures or other language constructs to
+Calico Scheme is easy.  We wrote a transformation program to automatically
+transform the high-level CPS code into a low-level trampolined register machine
+\cite{EOPL3}.  Although the resulting register machine code is still in Scheme,
+it does not rely on Scheme's call stack, higher-order procedures, or
+parameter-passing mechanisms.  Thus it can be translated directly into
+low-level C# code and then compiled for the MVM.
+
+Calico Scheme supports all of the main language features of standard Scheme,
+such as first-class procedures and continuations, but also adds several new
+features of it own.  For example, we included support for exception handling in
+the form of \texttt{try}, \texttt{catch}, \texttt{finally}, and \texttt{raise}
+expressions.  Of course, the equivalent functionality can also be easily
+achieved with \texttt{call/cc}, but since many students may already be familiar
+with exception handling constructs in Java or Python, we decided to include
+similar types of constructs in Calico Scheme as well.  To aid in debugging when
+an exception is thrown, we implemented a user-configurable stack-trace
+reporting mechanism that mimics the appearance of stack traces generated in
+Python.  We also included support for McCarthy's nondeterministic choice
+operator \texttt{amb} \cite{AMB}, called \texttt{choose} in Calico Scheme.
+This allows students to easily explore the very different---and very
+powerful---paradigm of nondeterministic computing, to which most of them have
+probably not been exposed before.
+
+
+% refs:
+
+% [AMB] J. McCarthy, 1963. ``A Basis for a Mathematical Theory of Computation'', in
+% P. Braffort and D. Hirshberg (Eds.), \emph{Computer Programming and Formal
+% Systems}, North-Holland.
+
+% [EOPL3] D. Friedman and M. Wand, 2008. \emph{Essentials of Programming Languages, 3rd
+% edition}. MIT Press.
+
 
 \subsection{Experimental Languages}
 
