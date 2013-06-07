@@ -173,11 +173,15 @@ includes the DLR, and contains versions of IronPython and IronRuby.
 
 The DLR provides the following \cite{dlr-wikipedia}:
 \begin{itemize}
-\item A dynamic, shared type system (aka, DynamicObject)
+\item A dynamic, shared type system 
 \item Dynamic method dispatch
 \item Dynamic code generation
 \item Hosting API
 \end{itemize}
+
+DynamicObject was initially defined in the DLR, but now has been
+incoprorated into .NET 4.5 and Mono. DynamicObject is a base class for
+creating objects that determine the behavior dynamically at runtime.
 
 The DLR contains all the support necessary for creating, parsing, and
 executing modern dynamic languages. However, even with the DLR and the
@@ -425,6 +429,12 @@ This allows students to easily explore the very different---and very
 powerful---paradigm of nondeterministic computing, to which most of them have
 probably not been exposed before.
 
+The current transformation of Calico Scheme into C\# does not use the
+AST from the DLR. Therefore, our current version runs quite a bit
+slower than it could. However, to move to the DLR's AST, we will need
+to define our own elements for handling continuations (see a
+simple performance comparison, below).
+
 %Scheme has two forms of a stack-trace when an exception is thrown,
 %depending on a user-set config. These are made to mimic those
 %stack-traces of Python.
@@ -432,7 +442,7 @@ probably not been exposed before.
 \subsection{Experimental Languages}
 
 To add a language to Calico, one need only define a single function
-that returns a class instance. In fact, Calico comes with a
+that returns a Language class instance. In fact, Calico comes with a
 fill-in-the-blank wizard for creating new text-based languages. For
 text-based languages, one need only provide the language's name, a
 string for beginning line comments, and the the language's source code
