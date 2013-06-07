@@ -14,44 +14,52 @@
 
 \usepackage{amsmath}
 \usepackage{graphicx}
+\usepackage{color}
+\usepackage{listings}
 
 \begin{document}
+
+\definecolor{mygreen}{rgb}{0,0.6,0}
+
+\lstset{showspaces=false, basicstyle=\footnotesize, showstringspaces=false, 
+        captionpos=b, frame=single, numbers=left, commentstyle=\color{mygreen}}
 
 \conferenceinfo{SPLASH DLS'13}{October 28, 2013, Indianapolis, Indiana, USA.} 
 \copyrightyear{2013} 
 \copyrightdata{ACM} 
 
-\titlebanner{Submitted to SPLASH DLS'13; Under review}        % These are ignored unless
+\titlebanner{Submitted to SPLASH DLS'13}        % These are ignored unless
 %%\preprintfooter{short description of paper}   % 'preprint' option specified.
 
 \title{Calico: An Ecosystem for Dynamic Languages}
 %% \subtitle{Subtitle Text, if any}
 
 \authorinfo{Douglas S. Blank}
-           {Bryn Mawr College\\Department of Computer Science\\Bryn Mawr, PA 19010}
+           {Bryn Mawr College\\Department of Computer Science\\Bryn Mawr, PA 19010 USA}
            {dblank@cs.brynmawr.edu}
 
 \authorinfo{Mark F. Russo, Ph.D.}
-           {Rowan University\\Department of Computer Science\\Glassboro, NJ 08028}
+           {Rowan University\\Department of Computer Science\\Glassboro, NJ 08028 USA}
            {russomf@gmail.com}
 
 \authorinfo{James B. Marshall}
-           {Sarah Lawrence College\\Department of Computer Science\\Bronxville, NY 10708}
+           {Sarah Lawrence College\\Department of Computer Science\\Bronxville, NY 10708 USA}
            {jmarshall@slc.edu}
 
 \maketitle
 
 \begin{abstract}
-This is the text of the abstract.
+
 \end{abstract}
 
-\category{CR-number}{subcategory}{third-level}
+\category{D.3.4}{Programming Languages}{interpreters, runtime environments}
 
 \terms
-term1, term2
+Languages, Experimentation
 
-\keywords
-keyword1, keyword2
+\keywords 
+Integrated Development Environment, dynamic languages,
+virtual machine, language implementation, language interoperations
 
 \section{Overview}
 
@@ -102,7 +110,7 @@ A large portion of the universal virtual computer is defined by a
 machines (VMs) one could use for a dynamic language ecosystem. We
 wanted a VM with a large and active development community, and so
 excluded more narrowly-focused VMs such as the Squeak Virtual Machine
-(http://www.squeak.org/Features/TheSqueakVM/). Oracle's Java and
+\cite{squeakvm}. Oracle's Java and
 Microsoft's .NET are two VMs that both define viable possibilities:
 both have object-oriented programming languages, compilers, and
 associated virtual machines and runtimes. The Java VM (JVM) has the
@@ -112,16 +120,16 @@ executed by their respective virtual machines' runtime.
 
 Although both VMs have served as the foundation for dynamic languages,
 Java does not have a complete and robust official open-source
-implementation. On the other hand, .NET's virtual machine components,
+implementation. On the other hand, .NET’s virtual machine components,
 called the Common Language Infrastructure (CLI), have been clearly
 defined in a pair of Ecma standards, specifically Ecma \#334 and Ecma
-\#335 (Ecma Standards, 2011), and is protected by a promise from
-Microsoft not to sue (Microsoft Community Promise, 2007). More
+\#335 \cite{ecma-standards}, and is protected by a promise from
+Microsoft not to sue \cite{microsoft-community-promise}. More
 importantly, these standards have been implemented independently by
 Mono as open source. We have put a high value on having a complete and
 open source ``stack'' of robust software layers. Although one could
 debate which system is more ``open'', we decided to select the CLI as
-implemented by Mono. we will refer to Mono's implementation of the CLI
+implemented by Mono \cite{mono}. we will refer to Mono's implementation of the CLI
 as MVM (for Mono Virtual Machine).
 
 However, we are not limited to only MVM-based technologies. Using IKVM
@@ -140,29 +148,44 @@ implement a dynamic language, neither has built-in support for
 allowing such dynamic languages to interoperate. That is, even though
 a variety of languages can be compiled to either VM, there is little
 common infrastructure in the VM itself. Without a dynamic language
-infrastructure, it is difficult for languages to share environments,
-data structures, objects, or functions. Two Java Specification
-Requests have been made to add such functionality to Java: JSR-223
-would add language hosting and JSR-292 would add dynamic binding (Wu,
-2010). There are a number of projects underway to make the JVM more
-flexible for use with dynamic languages, including: the Da Vinci
-Machine \cite{davinci} as the reference implementation of JSR-292; Project Lambda
-adds lambda to the JVM; Project Jigsaw adds supported for importing
-versioned modules; and Nashhorn adds caches for dynamic invokes. When
+infrastructure, it is difficult for languages defined in the VM to
+define dynamic objects, and to share environments, data structures,
+objects, or functions. Two Java Specification Requests have been made
+to add such functionality to Java: JSR-223 would add language hosting
+and JSR-292 would add dynamic binding \cite{wu-2010}. In fact, there are a
+number of projects underway to make the JVM more flexible for use with
+dynamic languages, including: the Da Vinci Machine \cite{java-davinci}
+as the reference implementation of JSR-292; Project Lambda
+\cite{java-lambda} adds lambda to the JVM; Project Jigsaw adds
+supported for importing versioned modules \cite{java-jigsaw}; and
+Nashorn \cite{java-nashorn} adds caches for dynamic invokes. When
 complete, these technologies will extend the Java technologies to make
 them much more suitable for dynamic languages.
 
-The MVM has an existing, mature framework for implementing languages
-called the Dynamic Language Runtime (DLR), and at least two dynamic
-languages have been written using the DLR: IronPython and
-IronRuby. The DLR contains many tools and technologies for language
-writers to create languages, and abilities for the languages to
-interoperate. Calico includes the DLR, and contains versions of
-IronPython and IronRuby.
+On the other hand, the MVM has an existing, mature framework for
+implementing languages called the Dynamic Language Runtime (DLR)
+\cite{dynamic-language-runtime}, and at least two dynamic languages
+have been written using the DLR: IronPython \cite{ironpython},
+IronRuby \cite{ironruby}, and PowerShell \cite{powershell}. The DLR
+contains many tools and technologies for language writers to create
+languages, and abilities for the languages to interoperate. Calico
+includes the DLR, and contains versions of IronPython and IronRuby.
 
-The DLR contains support necessary for creating, parsing, and
-executing modern dynamic languages. [FIXME: add more details about the
-  DLR: DynamicObject, cache point, AST, hosting, environment]
+The DLR provides the following \cite{dlr-wikipedia}:
+\begin{itemize}
+\item A dynamic, shared type system (aka, DynamicObject)
+\item Dynamic method dispatch
+\item Dynamic code generation
+\item Hosting API
+\end{itemize}
+
+The DLR contains all the support necessary for creating, parsing, and
+executing modern dynamic languages. However, even with the DLR and the
+virtual machine, there are still a large set of functions that a
+modern programmer would expect from a universal computer (including
+audio and graphics). We now explore these supporting libraries.
+
+%%  DLR: DynamicObject, cache point, AST, hosting, environment]
 
 \subsection{Supporting Libraries}
 
@@ -171,25 +194,30 @@ capabilities on top of the virtual machine and dynamic language
 runtime that run the gamut from audio to graphics. Of course,
 operating systems and hardware vary wildly. Fortunately, there are
 open source libraries for the MVM that cover these requirements. For
-graphics, we selected Gtk\# which wraps low-level C-based
-libraries. For accessing audio and hardware devices (such as
-gamepads), we selected the Simple DirectMedia Layer (SDL). SDL is
-quite popular in open source, providing additional capabilities for
-many projects, including pygame.
+graphics, we selected Gtk\# \cite{gtk-sharp} which wraps low-level
+C-based libraries. For accessing audio and hardware devices (such as
+gamepads), we selected the Simple DirectMedia Layer (SDL)
+\cite{sdl}. SDL is quite popular in open source, providing additional
+capabilities for many projects, including pygame
+\cite{pygame}. Finally, we also added espeak \cite{espeak} to provide
+cross-platform text-to-speech functionality.
 
-[FIXME: Gtk. SDL. espeak. graphviz. ]
+%% [FIXME: Gtk. SDL. espeak. graphviz. ]
 
 The MVM and the above mentioned libraries form the lowest level of the
-virtual computer. These libraries are machine-dependent, and those
+virtual computer. These libraries are machine-dependent, and, as such,
 must be compiled for each platform. We attempted to create the fewest
 number of machine-specific dependencies to make the virtual computer
-easy to maintain and port to new architectures. The machine-dependent
-code is wrapped for consumption by the MVM. Finally, after this
+easy to maintain and port to new architectures.  Finally, after this
 low-level set of dependencies are satisfied, then additional libraries
 can be written in a machine-independent fashion using the MVM, or with
 the JVM and converted with IKVM.
 
-[FIXME: IKVM]
+IKVM is an interesting open source project that translates binary code
+between MVM/.NET and the JVM \cite{ikvm}. It has the ability to make
+code compiled for the JVM availble to the MVM, and, likewise, to make
+code compiled for the MVM (or .NET in general) available to the
+JVM. We see an example of IKVM with Calico Java (discussed below).
 
 Combined with the MVM and DLR, these libraries complete the
 functionality of a universal virtual computer so that one can write
@@ -209,7 +237,16 @@ to be agnostic to any particular language, or particular use.
 
 \section{Languages}
 
-[FIXME] What defines a Calico language? Document, Engine
+A Calico language is composed of two abstract parts: a
+\textit{document}, and an \textit{engine}. The document is responsible
+for the visual representation and editing of scripts witten in the
+language. The engine is responsible for executing the scripts.
+
+Not everything need be a complete language to take advantage of the
+Calico infrastructure. For example, we have two ``languages''
+(Spreadsheet, and Image) that only have a document, but not an
+engine. This allows us to use IDE for viewing and editing spreadsheets
+and images.
 
 First-class languages: stepper, breakpoints, share variables, call
 functions, execute/evaluate code and expressions from other languages,
@@ -217,6 +254,12 @@ import Calico modules as if they were native.
 
 Second-class: naive ports, minimal interoperation, possibly unable to
 import modules.
+
+Used for education \cite{blank-etal-2012, blank-ohara-2013}. Our goal
+in focusing on Jigsaw, Python, and Scheme are for pedagogical
+purposes. Our educational goals for using Calico is to create a smooth
+learning experience, whereby students can transfer skills from one
+language to the next.
 
 \subsection{Calico Jigsaw}
 
@@ -338,21 +381,23 @@ Based on IronPython.
 
 \subsection{Calico Scheme}
 
-We wrote a properly tail-recursive implementation of Scheme from scratch and
-integrated it into Calico.  Tail-recursion is an idiom that students often
-discover on their own as a way of implementing iteration (Blank and Kumar,
-2010). Unfortunately, most of the languages commonly used in introductory
-courses (for example, Java, Python, and C++) do not handle tail-recursion
-correctly, which may lead to crashes if a student's program exceeds the
-language's recursion depth limit. This is seen by students as a bug in their
+We wrote a properly tail-recursive implementation of Scheme from
+scratch and integrated it into Calico.  Tail-recursion is an idiom
+that students often discover on their own as a way of implementing
+iteration \cite{blank-kumar-2010}. Unfortunately, most of the
+languages commonly used in introductory courses (for example, Java,
+Python, and C++) do not handle tail-recursion correctly, which may
+lead to crashes if a student's program exceeds the language's
+recursion depth limit. This is seen by students as a bug in their
 code, whereas it is really a limitation of the underlying language
-implementation. Unlike other Scheme implementations for the MVM, Calico Scheme
-does not rely on the underlying call stack of the implementation language to
-manage function calls, nor does it require functions to be compiled to Common
-Language Runtime (CLR) bytecode. Consequently, tail calls are handled properly
-in Calico Scheme, as required by the Scheme language specification (Sperber et
-al., 2010), imposing no limit on the depth of the call stack (aside from system
-memory limitations).
+implementation. Unlike other Scheme implementations for the MVM,
+Calico Scheme does not rely on the underlying call stack of the
+implementation language to manage function calls, nor does it require
+functions to be compiled to Common Language Runtime (CLR)
+bytecode. Consequently, tail calls are handled properly in Calico
+Scheme, as required by the Scheme language specification
+\cite{sperber-etal-2010}, imposing no limit on the depth of the call
+stack (aside from system memory limitations).
 
 Our Scheme implementation is itself written in Scheme, utilizing full
 continuation-passing style (CPS).  Because the interpreter is in CPS, adding
@@ -362,8 +407,8 @@ transform the high-level CPS code into a low-level trampolined register machine
 \cite{EOPL3}.  Although the resulting register machine code is still in Scheme,
 it does not rely on Scheme's call stack, higher-order procedures, or
 parameter-passing mechanisms.  Thus it can be translated directly into
-low-level C# code and then compiled for the MVM.
-
+low-level C\# code and then compiled for the MVM.
+ 
 Calico Scheme supports all of the main language features of standard Scheme,
 such as first-class procedures and continuations, but also adds several new
 features of it own.  For example, we included support for exception handling in
@@ -380,16 +425,9 @@ This allows students to easily explore the very different---and very
 powerful---paradigm of nondeterministic computing, to which most of them have
 probably not been exposed before.
 
-
-% refs:
-
-% [AMB] J. McCarthy, 1963. ``A Basis for a Mathematical Theory of Computation'', in
-% P. Braffort and D. Hirshberg (Eds.), \emph{Computer Programming and Formal
-% Systems}, North-Holland.
-
-% [EOPL3] D. Friedman and M. Wand, 2008. \emph{Essentials of Programming Languages, 3rd
-% edition}. MIT Press.
-
+%Scheme has two forms of a stack-trace when an exception is thrown,
+%depending on a user-set config. These are made to mimic those
+%stack-traces of Python.
 
 \subsection{Experimental Languages}
 
@@ -457,14 +495,16 @@ Python, so speed improvements will probably be minimal.
     \hline                        
     \textbf{Language} & \textbf{Time (in Seconds), Factorial of 1000} \\
     \hline                        
-    Calico Python                 & time \\
-    Calico Ruby                   & time \\
-    Calico Jigsaw                 & time \\
-    Calico Scheme (recursive)     & time \\
-    Calico Scheme (non-recursive) & time \\
-    Calico Basic                  & time \\
+    Calico Scheme (non-recursive) & 0.002 \\
+    CPython (recursive)           & 0.003 \\
+    Calico Python (recursive)     & 0.020 \\
+    Calico Ruby (recursive)       & 0.024 \\
+    Calico Basic (using goto)     & 0.053 \\
+    Calico Jigsaw (recursive)     & 0.072 \\
+    Calico Scheme (recursive)     & 0.368 \\
   \end{tabular}
-  \caption{Performance comparison between languages.}
+  \caption{Performance comparison between languages on a simple
+    function: computing the factorial of 1000.}
   \label{performance}
 \end{table}
 
@@ -476,26 +516,32 @@ Sharing values between languages.  Sharing code between languages.
 
 Examples of interop.
 
-\begin{verbatim}
+\begin{lstlisting}[language=Lisp, morekeywords={define}, caption={Defining a function \texttt{pytuple} in 
+      Calico Scheme that directly uses Calico Python's lambda to construct a Python tuple. Notice     
+      that in line 7 that the tuple's representation reflects the style
+      from Python.}, label={scheme1}]
 scheme> (define pytuple 
-          (calico.Evaluate "lambda *args: args" 
-                           "python"))
+          (calico.Evaluate 
+             "lambda *args: args" 
+             "python"))
 Ok
 scheme> (pytuple 1 2 3)
 (1, 2, 3)
 Ok
-\end{verbatim}
+\end{lstlisting}
 
 
-\begin{verbatim}
+\begin{lstlisting}[language=Lisp, morekeywords={define}, caption={Defining a funtion \texttt{pylist} in Calico Scheme that creates a
+    Python list.}, label={scheme2}]
 scheme> (define pylist 
-           (calico.Evaluate "lambda *args: list(args)" 
-                            "python"))
+           (calico.Evaluate 
+              "lambda *args: list(args)" 
+              "python"))
 Ok
 scheme> (pylist 1 2 3)
 [1, 2, 3]
 Ok
-\end{verbatim}
+\end{lstlisting}
 
 For example, in Python you can call a function written in Scheme.
 
@@ -512,22 +558,22 @@ expressions from any language that has access to the calico
 object. Here, Calico Python calls Java to create a variable with a
 particular value:
 
-\begin{verbatim}
+\begin{lstlisting}[language=Python, caption={Calling Java from Python.}, label={callingjava1}]
 python> calico.Execute("int x = 1;", "java")
-True
 Ok
-python> py_x = calico.Evaluate("x", "java")
+python> pyx = calico.Evaluate("x", "java")
 Ok
-python> py_x
+python> print(pyx) 
 <java.lang.Integer object at 0x002B [1]>
-python> py_x.intValue()
+Ok
+python> print(pyx.intValue())
 1
 Ok
-\end{verbatim}
+\end{lstlisting}
 
-The value of py\_x is actually value directly from the Java world: a
+The value of \texttt{pyx} is actually value directly from the Java world: a
 java.lang.Integer object. To convert it to a MVM value depends on the
-specifics of the foreign system. In this case, py\_x.intValue().
+specifics of the foreign system. In this case, \texttt{pyx.intValue()}.
 
 \subsection{Current Limitations and Future Work}
 
@@ -555,7 +601,7 @@ available to Python. One could then write ``Processing.window(400,
 would write ``(using "Processing")'' to make the Calico Processing
 module available to Scheme. One could then write ``(Processing.window
 400 300)'' in Scheme to do the same thing. Finally, in Calico Jigsaw,
-selecting ``Use a Module -> Processing'' from the menu would allow the
+selecting ``Use a Module; Processing'' from the menu would allow the
 window-block to be dragged onto the Jigsaw workspace. Thus, the
 Processing module is written and compiled once, becomes available to
 all of the first-class Calico languages, and used as if it were
@@ -582,13 +628,14 @@ and namespaces. Thus, we have specified a subset of all that is
 possible for our own modules so that no additional knowledge or
 discovery is needed.
 
-\begin{verbatim}
+\begin{lstlisting}[language=Java, caption={Example module template.}, label={csharp-module}]
+// C# ModuleName.cs compiles to ModuleName.dll
 public class ModuleName {
     public static int Plus(int a, int b) {
         return (a + b);
     }
 }
-\end{verbatim}
+\end{lstlisting}
 
 If the code in Figure was compiled and placed into the Calico/modules
 folder, then it could be used in Python (as in the form ``import
@@ -684,23 +731,126 @@ Acknowledgments, if needed.
 \begin{thebibliography}{}
 \softraggedright
 
-\bibitem[Smith et~al.(2009)Smith, Jones]{smith02}
-P. Q. Smith, and X. Y. Jones. ...reference text...
-
-\bibitem[Da Vinci (2008)]{davinci}
+\bibitem[]{java-davinci}
 %% Details on Da Vinci Machine for the JVM
-%% http://openjdk.java.net/projects/mlvm/pdf/LangNet20080128.pdf
+Da Vinci Machine for the JVM.\\ URL http://openjdk.java.net/projects/mlvm/pdf/LangNet20080128.pdf Accessed June 6, 2013.
 
-\bibitem[Rose (2012)]{jrose12}
+\bibitem{java-lambda}
+Project Lambda for the JVM.\\ URL http://openjdk.java.net/projects/lambda/ Accessed June 6, 2013.
+
+\bibitem{java-jigsaw}
+Project Jigsaw for the JVM.\\ URL http://openjdk.java.net/projects/jigsaw/ Accessed June 6, 2013.
+
+\bibitem{java-nashorn}
+Project Nashorn for the JVM.\\ URL http://openjdk.java.net/projects/nashorn/ Accessed June 6, 2013.
+
+\bibitem{dynamic-language-runtime}
+Dynamic Language Runtime. Microsoft.\\ URL http://en.wikipedia.org/wiki/Dynamic\_Language\_Runtime Accessed June 6, 2013.
+
+\bibitem{ironpython}
+IronPython.\\ URL http://ironpython.codeplex.com/ Accessed on January 12, 2012.
+
+\bibitem{ironruby}
+IronRuby.\\ URL http://en.wikipedia.org/wiki/IronRuby Accessed on June 6, 2013.
+
+\bibitem{gtk-sharp}
+GtkSharp.\\ URL http://www.mono-project.com/GtkSharp Accessed on January 12, 2012.
+
+\bibitem{sdl}
+Simple Direct Media Layer.\\ URL http://www.libsdl.org/ Accessed on June 6, 2013.
+
+\bibitem{csharp-sdl}
+C\# SDL, wrapper for SDL.\\ URL http://cs-sdl.sourceforge.net/ Accessed June 6, 2013.
+
+\bibitem{pygame}
+Pete Shinners. Python Pygame Introduction.\\ URL http://www.pygame.org/docs/tut/intro/intro.html Accessed on June 6, 2013.
+
+\bibitem{ikvm}
+IKVM Homepage.\\ URL http://www.ikvm.net/ Accessed June 6, 2013.
+
+\bibitem{wu-2010}
+Chaur Wu. 2010. \textit{Pro DLR for .NET 4}. Apress, 2010.
+
+\bibitem{calico-project}
+Calico Project.\\ URL http://calicoproject.org/ Accessed June 6, 2013.
+
+\bibitem{blank-etal-2012} Douglas Blank, Jennifer S. Kay, James
+  B. Marshall, Keith O'Hara, and Mark Russo. \textit{Calico: A
+    Multi-Programming-Language, Multi-Context Framework Designed for
+    Computer Science Education}.  SIGCSE’12, February 29–March 3,
+  2012, Raleigh, North Carolina, USA.
+
+\bibitem{blank-ohara-2013} Douglas Blank and Keith
+  O'Hara. \textit{The Calico Project for Robots in
+    Education}. 2013. Under review.
+
+\bibitem{jrose12}
 %% Details on upcoming dynamic language support for Java
-%% http://cr.openjdk.java.net/~jrose/pres/201204-LangNext.pdf
+J. Rose. Lang Next.\\ URL
+http://cr.openjdk.java.net/~jrose/pres/201204-LangNext.pdf Accessed
+June 6, 2013.
 
-\bibitem[]{squeak}
+\bibitem{squeakvm}
 %% Lists many via VMs, including Squeak
-%% http://en.wikipedia.org/wiki/Comparison_of_application_virtual_machines
+Squeak Virtual Machine.\\ URL http://www.squeak.org/Features/TheSqueakVM/ Accessed June 6, 2013.
 
-\bibitem[]{python-benchmark}
-%% https://ironpython.codeplex.com/wikipage?title=IP27A1VsCPy27Perf&referringTitle=IronPython%20Performance
+\bibitem{vm-compare} Comparison of application virtual machines.\\ URL
+  http://en.wikipedia.org/wiki/Comparison \_of\_application\_virtual\_machines
+  Accessed June 6, 2013.
+
+\bibitem{python-benchmark} IronPython Performance. \\ URL
+  https://ironpython.codeplex.com/wikipage?title=IP27A1VsCPy27Perf
+  \&referringTitle=IronPython\%20Performance Accessed June 6, 2013.
+
+\bibitem{ecma-standards} Ecma Standards.\\
+URL http://www.mono-project.com/ECMA Accessed on January 12, 2012.
+
+\bibitem{mono} Mono Virtual Machine and Runtime.\\ URL http://en.wikipedia.org/wiki/Mono\_(software) Accessed June 6, 2013.
+
+\bibitem{microsoft-community-promise} Microsoft Community Promise. 2007.\\
+URL http://www.microsoft.com/interop/cp/ Accessed June 6, 2013.
+
+\bibitem{espeak} eSpeak, text-to-speech.\\ URL http://espeak.sourceforge.net/ Accessed June 6, 2013.
+
+\bibitem{steinart-etal-2012} Bastian Steinert, Damien Cassou, and
+  Robert Hirschfeld. \textit{CoExist: Overcoming Aversion to
+    Change}. DSL'12.
+
+\bibitem{dlr-wikipedia} Dynamic Language Runtime.\\ URL
+  http://en.wikipedia.org/wiki/Dynamic\_Language\_Runtime Accessed
+  June 6, 2013.
+
+\bibitem{blank-kumar-2010} Douglas Blank and Deepak
+  Kumar. 2010. \textit{Assessing the Impact of using Robots in
+    Education, or: How We Learned to Stop Worrying and Love the
+    Chaos}. 2010. AAAI Spring Symposium Series, Educational Robotics
+  and Beyond: Design and Evaluation, Palo Alto, California, March 22,
+  2010 – March 24, 2010.
+
+\bibitem{ipre-2008} Tucker Balch, Jay Summet, Douglas Blank, Deepak Kumar,
+  Mark Guzdial, Keith O'Hara, Dan Walker, Monica Sweat, Gaurav Gupta,
+  Stewart Tansley, Jared Jackson, Mansi Gupta, Marwa Muhammad, Shikha
+  Prashad, Natasha Eilbert, Ashley Gavin. 2008. \textit{Designing
+    Personal Robots for Education: Hardware, Software, and
+    Curriculum}. Pervasive Computing, IEEE, volume 7, Issue 2, pages 5
+  - 9. April 2008.
+
+\bibitem{blank-2006} Douglas Blank. 2006. \textit{Robots make computer science
+  personal}. Communications of the ACM 49, 12, 25-27.
+
+\bibitem{powershell} PowerShell. URL http://en.wikipedia.org/wiki/PowerShell Accessed June 6, 2013.
+
+\bibitem{sperber-etal-2010} Michael Sperber, R. Kent Dybvig, Matthew
+  Flatt, Anton van Straaten, Robby Findler, Jacob Matthews
+  (editors). 2010. \textit{Revised [6] Report on the Algorithmic Language
+  Scheme}. Cambridge University Press. April 2010.
+
+\bibitem{AMB} J. McCarthy, 1963. ``A Basis for a Mathematical Theory
+  of Computation'', in P. Braffort and D. Hirshberg (Eds.),
+  \emph{Computer Programming and Formal Systems}, North-Holland.
+
+\bibitem{EOPL3} D. Friedman and M. Wand, 2008. \emph{Essentials of
+  Programming Languages, 3rd edition}. MIT Press.
 
 \end{thebibliography}
 
