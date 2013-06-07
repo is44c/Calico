@@ -183,13 +183,13 @@ The DLR provides the following \cite{dlr-wikipedia}:
 
 DynamicObject was initially defined in the DLR, but now has been
 incoprorated into .NET 4.5 and Mono. DynamicObject is a base class for
-creating objects that determine the behavior dynamically at runtime.
-
-The DLR contains all the support necessary for creating, parsing, and
-executing modern dynamic languages. However, even with the DLR and the
-virtual machine, there are still a large set of functions that a
-modern programmer would expect from a universal computer (including
-audio and graphics). We now explore these supporting libraries.
+creating objects that determine the behavior dynamically at
+runtime. The DLR contains all the support necessary for creating,
+parsing, and executing modern dynamic languages. However, even with
+the DLR and the virtual machine, there are still a large set of
+functions that a modern programmer would expect from a universal
+computer (including audio and graphics). We now explore these
+supporting libraries.
 
 %%  DLR: DynamicObject, cache point, AST, hosting, environment]
 
@@ -248,24 +248,48 @@ A Calico language is composed of two abstract parts: a
 for the visual representation and editing of scripts witten in the
 language. The engine is responsible for executing the scripts.
 
-Not everything need be a complete language to take advantage of the
-Calico infrastructure. For example, we have two ``languages''
+Not every use of Calico need be a complete language to take advantage
+of the Calico infrastructure. For example, we have two ``languages''
 (Spreadsheet, and Image) that only have a document, but not an
-engine. This allows us to use IDE for viewing and editing spreadsheets
-and images.
+engine. This allows us to use the IDE for viewing and editing
+spreadsheets and images. We could have made spreadsheets and images
+just libraries (which they are as well). However, by raising them to
+the level of a language, they can be opened and manipulated directly
+by Calico.
 
-First-class languages: stepper, breakpoints, share variables, call
-functions, execute/evaluate code and expressions from other languages,
-import Calico modules as if they were native.
+Of course, the main purpose of Calico is to provide an environment for
+using dynamic languages. We divide up languages into two kinds:
+\textit{first-class} and \textit{second-class} languages. We define a
+first-class language to support the following features:
 
-Second-class: naive ports, minimal interoperation, possibly unable to
-import modules.
+\begin{itemize}
 
-Used for education \cite{blank-etal-2012, blank-ohara-2013}. Our goal
-in focusing on Jigsaw, Python, and Scheme are for pedagogical
-purposes. Our educational goals for using Calico is to create a smooth
-learning experience, whereby students can transfer skills from one
-language to the next.
+\item has an interactive program stepper
+\item ability to set breakpoints
+\item ability to share variables with other languages
+\item ability to call functions, execute/evaluate code and expressions from other languages,
+\item ability to import Calico modules (e.g., libraries) as if they were native libraries
+
+\end{itemize}
+
+A second-class language is everything else. This includes naive
+language ports (i.e., languages that do not take advantage of the
+Calico ecosystem), possesses minimal interoperation with other
+languages, or inable to import Calico modules. Most of the languages
+incorporated lie somewhere between first-class and second-class
+status. However, over time, we hope to move more languages to
+first-class status.
+
+Having an environment like Calico is a useful system unto itself for
+exploring dynamic language programming and interoperation. However, it
+can also be of great utility to the beginning programmer. Used having
+been exploring the use of Calico for computer science education
+\cite{blank-etal-2012, blank-ohara-2013}. Our goal in focusing on
+Jigsaw, Python, and Scheme are for pedagogical purposes. Our
+educational goal for using Calico is to create a smooth learning
+experience, whereby students can transfer skills from one language to
+the next. In the next sections we will breifly explore a series of
+Calico languages.
 
 \subsection{Calico Jigsaw}
 
@@ -379,11 +403,25 @@ perfectly interleaved.
   \label{jigsaw4}
 \end{figure}
 
-\subsection{Calico Python}
+\subsection{Calico Python and Ruby}
 
-Based on IronPython. 
+Calico Python is based on IronPython, with compiler options set to be
+as much like Python 3 as possible. This includes treating print as a
+function, and making the division operator produce a floating-point
+number instead of the standard truncated integer, when a integer is
+divided by another.
 
-\subsection{Calico Ruby}
+IronPython is the most developed and tested language using the DLR.
+By default, a DLR-based language has the ability to use DLLs
+directly. However, to make a language a first-class Calico language,
+it must also provide debugger and interoperation
+functionality. Because of the DLR, this additional functionality was
+fairly easy to implement.
+
+Likewise, Calico Ruby is based on IronRuby. Although not as well
+developed, IronRuby is a very complete implementation of the
+language. Calico Ruby is currently a second-class language, as we have
+not implemented stepping support.
 
 \subsection{Calico Scheme}
 
@@ -478,15 +516,33 @@ been initiated.
 
 \subsubsection{Calico Java}
 
-Calico Java is an example of a second-class language in the ecosystem.
+Calico Java is an example of a second-class language in the
+ecosystem. However, the technology to bring it into the Calico fold is
+quite interesting. We use the Java interpreter from DrJava
+\cite{drjava}. Unfortunately that is written in Java. Using IKVM, we
+convert the Java bytecode to MVM bytecode. Thus, Calico can parse and
+interpret Java in the MVM. 
 
-Java interpreter from DrJava written in Java. Java bytecode converted
-to MVM bytecode. Thus, can parse and interpret Java in the MVM. Even
-more interesting, the Calico modules can be used in the Java.
+Even more interesting, to allow Java to use the Calico DLL modules,
+they needed to be able to be consumed from the Java side. So, the DLL
+modules were converted to jar files via IKVM. Therefore, the Calico
+modules can be used in the Java, both the real JVM and also our Java
+interpreted.
+
+The complete effect is that Calico Java can load jars that were once
+DLLs, but interprete the language in the MVM rather than the
+JVM. Unfortunately, the DrJava interpreter needs additional support
+for stepping and line number errors to be able to make Java a
+first-class Calico language.
 
 \subsubsection{Calico Basic, Logo}
 
-Written in Calico Python. 
+Because all of the languages live in the same environment, it is easy
+to develop a new Calico language in one of the existing Calico
+languages. For example, Calico Basic and Calico Logo are both
+interpreters written in Python. We have added the ability of both of
+those languages to use Calico libraries; however, neither has
+debugging support.
 
 \subsection{Performance}
 
