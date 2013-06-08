@@ -80,7 +80,7 @@ developers wishing to explore computer science and pedagogy.
 Calico is defined by three layers of technologies: a universal virtual
 computer, a dynamic language runtime, and support libraries and
 executables. In addition, an Integrated Development Environment (IDE)
-pulls all of these pieces together, for students and researchers. As
+pulls all of these pieces together, for use by students and researchers. As
 implemented, Calico languages can all live and operate in the same
 space, share variables and code, and the code can run competitively
 fast. The following sections go into the details of each of the pieces
@@ -88,22 +88,24 @@ that comprise the Calico ecosystem.
 
 \subsection{Universal Virtual Computer}
 
-At the foundation of Calico is what could be characterised from the
-programmer's perspective as a universal virtual computer. The dynamic
-language programmer should be able to write code capable of modern
-functionality without having to worry about the details of the
-operating system or underlying hardware. For example, the programmer
-should be able to write programs capable of: turning text to speech;
-playing audio files; defining functions that can be used for tone
-generation; creating graphical user interfaces with unconstrained
-drawing abilities; reading and writing standard image formats; and
-providing access to modern input/output hardware devices, such as
-gamepads, joysticks, webcams, and robots. In addition, such a system
-should be easy to install and maintain, with limited need for
-platform-specific dependencies. Finally, we believe that a long term
-platform for research and education should be free, both in terms of
-price and ability to distribute and alter. This section examine the
-components of a universal virtual computer.
+From the programmer's perspective, the foundation of Calico is a
+``universal virtual computer''. The dynamic language programmer should
+be able to write code capable of modern functionality without having
+to worry about the details of the operating system or underlying
+hardware. For example, the programmer should be able to write programs
+capable of: turning text to speech; playing audio files; defining
+functions that can be used for tone generation; creating graphical
+user interfaces with unconstrained drawing abilities; reading and
+writing standard image formats; and providing access to modern
+input/output hardware devices, such as gamepads, joysticks, webcams,
+and robots. In addition, such a system should be easy to install and
+maintain, with limited need for platform-specific
+dependencies. Finally, we believe that a long term platform for
+research and education should be free, both in terms of price and
+ability to distribute and alter. Thus, the programmer should be able
+to program to a complete, easily-accessible, free, modern, universal
+virtual computer. This section examine the components of a universal
+virtual computer.
 
 \subsubsection{Virtual Machine}
 
@@ -112,27 +114,28 @@ A large portion of the universal virtual computer is defined by a
 machines (VMs) one could use for a dynamic language ecosystem. We
 wanted a VM with a large and active development community, and so
 excluded more narrowly-focused VMs such as the Squeak Virtual Machine
-\cite{squeakvm}. Oracle's Java and
-Microsoft's .NET are two VMs that both define viable possibilities:
-both have object-oriented programming languages, compilers, and
-associated virtual machines and runtimes. The Java VM (JVM) has the
-Java language (among other possibilities), and .NET has C\# (among
-other possibilities). Both systems compile to bytecode that is
-executed by their respective virtual machines' runtime.
+\cite{squeakvm}. Oracle's Java and Microsoft's .NET are two VMs that
+both define viable possibilities: both have object-oriented
+programming languages, compilers, and associated virtual machines and
+runtimes. The Java VM (JVM) has the Java language (among other
+possibilities), and .NET has the C\# language (among other
+possibilities). Both systems compile to bytecode that is executed by
+their respective virtual machines' runtime.
 
 Although both VMs have served as the foundation for dynamic languages,
-Java does not have a complete and robust official open-source
+Java does not have a complete and robust open-source
 implementation. On the other hand, .NET’s virtual machine components,
 called the Common Language Infrastructure (CLI), have been clearly
 defined in a pair of Ecma standards, specifically Ecma \#334 and Ecma
 \#335 \cite{ecma-standards}, and is protected by a promise from
 Microsoft not to sue \cite{microsoft-community-promise}. More
 importantly, these standards have been implemented independently by
-Mono as open source. We have put a high value on having a complete and
-open source ``stack'' of robust software layers. Although one could
-debate which system is more ``open'', we decided to select the CLI as
-implemented by Mono \cite{mono}. we will refer to Mono's implementation of the CLI
-as MVM (for Mono Virtual Machine).
+Mono as open source. We have put a high value on having a complete,
+independent, and open source ``stack'' of robust software
+layers. Although one could debate which system is more ``open'', we
+decided to select the CLI as implemented by Mono \cite{mono}. we will
+refer to Mono's implementation of the CLI as MVM (for Mono Virtual
+Machine).
 
 However, we are not limited to only MVM-based technologies. Using IKVM
 (described below) we are able to utilize code compiled for the Java
@@ -166,12 +169,15 @@ them much more suitable for dynamic languages.
 
 On the other hand, the MVM has an existing, mature framework for
 implementing languages called the Dynamic Language Runtime (DLR)
-\cite{dynamic-language-runtime}, and at least two dynamic languages
-have been written using the DLR: IronPython \cite{ironpython},
-IronRuby \cite{ironruby}, and PowerShell \cite{powershell}. The DLR
-contains many tools and technologies for language writers to create
-languages, and abilities for the languages to interoperate. Calico
-includes the DLR, and contains versions of IronPython and IronRuby.
+\cite{dlr-microsoft}, and at least three dynamic languages have been
+written using the DLR: IronPython \cite{ironpython}, IronRuby
+\cite{ironruby}, and PowerShell \cite{powershell}. The DLR contains
+many tools and technologies for language writers to create languages,
+and abilities for the languages to interoperate. Calico includes the
+DLR, and contains versions of IronPython and IronRuby. A language need
+not use the functionality of the DLR to be used in Calico, but this
+functionality is required for a language to be considered
+\textit{first-class} (described below).
 
 The DLR provides the following \cite{dlr-wikipedia}:
 \begin{itemize}
@@ -181,15 +187,16 @@ The DLR provides the following \cite{dlr-wikipedia}:
 \item Hosting API
 \end{itemize}
 
-DynamicObject was initially defined in the DLR, but now has been
-incoprorated into .NET 4.5 and Mono. DynamicObject is a base class for
-creating objects that determine the behavior dynamically at
-runtime. The DLR contains all the support necessary for creating,
-parsing, and executing modern dynamic languages. However, even with
-the DLR and the virtual machine, there are still a large set of
-functions that a modern programmer would expect from a universal
-computer (including audio and graphics). We now explore these
-supporting libraries.
+A new object type, DynamicObject, was created to implement this
+functionality. DynamicObject was initially defined in the DLR as an
+external library, but now has been incoprorated into .NET 4.5, the C\#
+language, and Mono. DynamicObject is a base class for creating objects
+that determine the behavior dynamically at runtime. The DLR contains
+all the support necessary for creating, parsing, and executing modern
+dynamic languages. However, even with the DLR and the virtual machine,
+there are still a large set of functions that a modern programmer
+would expect from a universal computer (including audio and
+graphics). We now explore these supporting libraries.
 
 %%  DLR: DynamicObject, cache point, AST, hosting, environment]
 
@@ -215,9 +222,9 @@ virtual computer. These libraries are machine-dependent, and, as such,
 must be compiled for each platform. We attempted to create the fewest
 number of machine-specific dependencies to make the virtual computer
 easy to maintain and port to new architectures.  Finally, after this
-low-level set of dependencies are satisfied, then additional libraries
-can be written in a machine-independent fashion using the MVM, or with
-the JVM and converted with IKVM.
+low-level set of dependencies are satisfied, additional libraries can
+be written in a machine-independent fashion using the MVM, or written
+with the JVM and converted with IKVM to the MVM.
 
 IKVM is an interesting open source project that translates binary code
 between MVM/.NET and the JVM \cite{ikvm}. It has the ability to make
@@ -238,15 +245,42 @@ FreeBSD.
 \subsection{Integrated Development Environment}
 
 From the user's perspective, an important part of using any
-programming language is the user interface. The Calico IDE is designed
-to be agnostic to any particular language, or particular use.
+programming language is the user interface implemented in the
+Integrated Development Environment (IDE). In fact, there are many
+subtle details that go into making a useful IDE. One could re-use an
+existing IDE to integrate the universal virtual computer. However, we
+choose to use the virtual computer to implement a new IDE. This serves
+as both a test of the system, but also makes it easy to make all of
+the IDE functionality accessible to the programmer. 
+
+\begin{figure}[h!]
+  \centering
+     \includegraphics[width=75mm]{calico.eps}
+  \caption{The Calico IDE. The IDE starts up ready to program in the
+    default language. In this example, Calico Python is the default
+    language.}
+  \label{calico-ide}
+\end{figure}
+
+The Calico IDE, as shown in Figure~\ref{calico-ide}, is designed to be
+agnostic to any particular language, or particular use. That is not to
+say, however, that the IDE treats all languages identically. For
+example, a visual, block-based language does not have a separate
+``shell'' as interactive functionality (such as evaluate an
+espression) is initiated through the visual interface. Text-based
+languages need the shell for the standard read-evaluate-print loop
+(REPL). Therefore, the Calico IDE rearranges slightly depending on
+whether the languages is text-based or not.
 
 \section{Languages}
 
 A Calico language is composed of two abstract parts: a
 \textit{document}, and an \textit{engine}. The document is responsible
 for the visual representation and editing of scripts witten in the
-language. The engine is responsible for executing the scripts.
+language. The engine is responsible for executing the scripts. The
+document and engine make up a container \textit{language} object which
+also identifies whether the language is text-based, the associated
+file extensions, and other language-specific details.
 
 Not every use of Calico need be a complete language to take advantage
 of the Calico infrastructure. For example, we have two ``languages''
@@ -265,6 +299,7 @@ first-class language to support the following features:
 \begin{itemize}
 
 \item has an interactive program stepper
+\item has a variable-speed tracer
 \item ability to set breakpoints
 \item ability to share variables with other languages
 \item ability to call functions, execute/evaluate code and expressions from other languages,
@@ -272,24 +307,24 @@ first-class language to support the following features:
 
 \end{itemize}
 
-A second-class language is everything else. This includes naive
-language ports (i.e., languages that do not take advantage of the
-Calico ecosystem), possesses minimal interoperation with other
-languages, or inable to import Calico modules. Most of the languages
-incorporated lie somewhere between first-class and second-class
-status. However, over time, we hope to move more languages to
-first-class status.
+A second-class language is one that is missing one or more of these
+features. This includes naive language ports (i.e., languages that do
+not take advantage of the Calico ecosystem), possess minimal
+interoperation with other languages, or inablity to import Calico
+modules. Most of the languages incorporated lie somewhere between
+first-class and second-class status. However, over time, we hope to
+move more languages to the first-class set.
 
 Having an environment like Calico is a useful system unto itself for
 exploring dynamic language programming and interoperation. However, it
-can also be of great utility to the beginning programmer. Used having
-been exploring the use of Calico for computer science education
+can also be of great utility to the beginning programmer. We are
+currently exploring the use of Calico for computer science education
 \cite{blank-etal-2012, blank-ohara-2013}. Our goal in focusing on
-Jigsaw, Python, and Scheme are for pedagogical purposes. Our
-educational goal for using Calico is to create a smooth learning
-experience, whereby students can transfer skills from one language to
-the next. In the next sections we will breifly explore a series of
-Calico languages.
+Jigsaw, Python, and the Scheme languages are for pedagogical
+purposes. Our educational goal for using Calico is to create a smooth
+learning experience, whereby students can transfer skills from one
+language to the next. In the next sections we will breifly explore a
+series of Calico languages.
 
 \subsection{Calico Jigsaw}
 
@@ -319,43 +354,50 @@ Jigsaw has several additional features that we feel make it unique.
   \label{jigsaw1}
 \end{figure}
 
-The first feature worth noting is that Jigsaw is built as a
-wrapper around IronPython. Even though Jigsaw is written in C\#, most
-Jigsaw statement blocks are implemented as Python statements. This
-integration between C\# and IronPython is possible with help from the
-DLR. Block statements are compiled and held as compiled code objects
-that are ready to be evaluated when the Jigsaw program runs. A
-consequence of this design decision is that Python syntax often can be
-used directly in Jigsaw. For example, instead of entering primitive
-values for block properties, Python expressions can be substituted
-directly. The IfTest conditional statement in a Jigsaw ``if'' block can be a
-boolean expression written using Python syntax (Figure~\ref{jigsaw2}). We believe
-that this approach better prepares the student for a smooth transition
-to higher level languages.
+The first feature worth noting is that Jigsaw is built as a wrapper
+around Python. Python thus serves as the engine for evaluating Jigsaw
+expressions. We could really use any Calico language for this purpose;
+however, because of our pedagogical goals, we decided to use Python as
+we suggest educators use Python as the next step in a student's
+computer science educational journey.
+
+Even though Jigsaw is written in C\#, most Jigsaw statement blocks are
+implemented as Python statements. This integration between C\# and
+Python is possible with help from the DLR. Block statements are
+compiled and held as compiled code objects that are ready to be
+evaluated when the Jigsaw program runs. A consequence of this design
+decision is that Python syntax often can be used directly in
+Jigsaw. For example, instead of entering primitive values for block
+properties, Python expressions can be substituted directly. The IfTest
+conditional statement in a Jigsaw ``if'' block can be a boolean
+expression written using Python syntax (Figure~\ref{jigsaw2}). We
+believe that this approach better prepares the student for a smooth
+transition to higher level languages.
 
 \begin{figure}[h!]
   \centering
     \includegraphics[width=75mm]{jigsaw2.eps} 
-  \caption{Jigsaw blocks leverage IronPython expressions.}
+  \caption{Jigsaw blocks leverage Python expressions.}
   \label{jigsaw2}
 \end{figure}
 
 Although Jigsaw statements and expressions are borrowed from
-IronPython, Jigsaw implements its own program control
+Python, Jigsaw implements its own program control
 structures. Blocks that provide looping, conditionals and procedures
-are all implemented entirely in Mono C\#. Program execution is managed
+are all implemented entirely in C\#. Program execution is managed
 using Jigsaw's own implementation of call stacks and stack frames
 along with local and global namespaces, an idea that is borrowed from
 Python.
 
 Another unique feature of Jigsaw is that it has a form of multitasking
-baked in to its execution engine. A Jigsaw program begins
-execution at a ``when script starts'' block, and proceeds down the
-attached stack of blocks, executing each in sequence. But a Jigsaw
-program can contain any number of ``when script starts'' blocks, which
-all begin execution at the same time. As a result, multiple block
-stacks a Jigsaw program can execute in parallel. See Figure~\ref{jigsaw3} 
-for an example. Blocks colors white are currently being executed. 
+baked in to its execution engine. A Jigsaw program begins execution at
+a ``when script starts'' block, and proceeds down the attached stack
+of blocks, executing each in sequence. But a Jigsaw program can
+contain any number of ``when script starts'' blocks, which all begin
+execution at the same time. As a result, a Jigsaw program can execute
+multiple block stacks in parallel. See Figure~\ref{jigsaw3} for an
+example. Blocks colored white indicate that it is currently being
+executed.
 
 \begin{figure}[h!]
   \centering
@@ -381,8 +423,8 @@ can safely coexist with a second loop that uses the value of the global
 variable to draw a graphic on the screen.
 
 Calico Jigsaw allows the export of any Jigsaw script to Calico Python
-(described below). However, as it must convert Jigsaw's controls to
-those of the Python language, the semantics must also be
+(described below). However, to export it must convert Jigsaw's
+controls to those of the Python language, the semantics must also be
 converted. Figure~\ref{jigsaw4} shows the above Jigsaw program as it
 appears after it has been exported to Python. Python does not have the
 built-in ability to run functions simultaneously as does Jigsaw. But,
@@ -390,8 +432,8 @@ the Calico Myro module (described below) includes a friendly interface
 for using threads through the ``doTogether'' function, and so the
 export translates the Jigsaw program to the proper form. Notice,
 however, that the Output tab indicates that Python's threads do not
-guarantee even multitasking as the 'Left' and 'Right' outputs are not
-perfectly interleaved.
+guarantee even multitasking inside the for-block as the 'Left' and
+'Right' outputs are not perfectly interleaved.
 
 \begin{figure}[h!]
   \centering
@@ -421,7 +463,7 @@ fairly easy to implement.
 Likewise, Calico Ruby is based on IronRuby. Although not as well
 developed, IronRuby is a very complete implementation of the
 language. Calico Ruby is currently a second-class language, as we have
-not implemented stepping support.
+not implemented the stepping support needed.
 
 \subsection{Calico Scheme}
 
@@ -473,7 +515,7 @@ The current transformation of Calico Scheme into C\# does not use the
 AST from the DLR. Therefore, our current version runs quite a bit
 slower than it could. However, to move to the DLR's AST, we will need
 to define our own elements for handling continuations (see a
-simple performance comparison, below).
+simple performance comparison, below). 
 
 %Scheme has two forms of a stack-trace when an exception is thrown,
 %depending on a user-set config. These are made to mimic those
@@ -487,21 +529,21 @@ fill-in-the-blank wizard for creating new text-based languages. For
 text-based languages, one need only provide the language's name, a
 string for beginning line comments, and the the language's source code
 file extension (such as ``.py'' for the Python language). Further
-refinements can help make the language more useful for
-programmers. Such refinements include providing language keyword
-details for the IDE's color syntax highlighting, and, of course, the
-language's parser and interpreter. Because Calico supports language
-interoperations, new Calico languages can be written in existing
-Calico languages. For example, Calico's Basic and Logo languages are
-themselves written in Calico Python. As another example, Calico Java's
-language definition is written in Python, but the Java interpreter is
-written in Java (described in more detail below).
+details can help make the language more useful for programmers. Such
+details include providing language keyword details for the IDE's color
+syntax highlighting, and, of course, the language's parser and
+interpreter. Because Calico supports calling other language, new
+languages can be written in existing Calico languages. For example,
+Calico's Basic and Logo languages are themselves written in Calico
+Python. As another example, Calico Java's language definition is
+written in Python, but the Java interpreter is written in Java
+(described in more detail below).
 
 One might want to use the Calico infrastructure for testing out a new
 language. For example, if you had an interpreter (written in any
 Calico language, or converted to use the MVM or JVM) then you could
-put a light wrapper around it, and simple use the Calico IDE to make
-it easy to use. If you list the keywords, and a few other items, you
+put a light wrapper around it, and simply use the Calico IDE to make
+it available. If you provide the keywords, and a few other items, you
 could also have color syntax highlighting. If you add hooks to your
 language to import Calico modules, then your experimental language
 would have access to all of the included libraries (described
@@ -512,28 +554,29 @@ Calico language.
 Because it is so easy to add a new language to Calico (given that such
 a language might initially be a second-class language with little
 connection to the rest of Calico) there are a few languages that have
-been initiated.
+been initiated, but which have limited integration in Calico.
 
 \subsubsection{Calico Java}
 
 Calico Java is an example of a second-class language in the
 ecosystem. However, the technology to bring it into the Calico fold is
 quite interesting. We use the Java interpreter from DrJava
-\cite{drjava}. Unfortunately that is written in Java. Using IKVM, we
-convert the Java bytecode to MVM bytecode. Thus, Calico can parse and
-interpret Java in the MVM. 
+\cite{drjava}. Unfortunately that code is written in Java. Using IKVM,
+we convert the Java bytecode directly to MVM bytecode. Thus, Calico can parse
+and interpret Java in the MVM.
 
-Even more interesting, to allow Java to use the Calico DLL modules,
+Even more interesting, to allow Calcio Java to use the Calico DLL modules,
 they needed to be able to be consumed from the Java side. So, the DLL
 modules were converted to jar files via IKVM. Therefore, the Calico
 modules can be used in the Java, both the real JVM and also our Java
 interpreted.
 
-The complete effect is that Calico Java can load jars that were once
-DLLs, but interprete the language in the MVM rather than the
+The complete effect is that Calico Java can load jar files that were
+once DLLs, but interprete the language in the MVM rather than the
 JVM. Unfortunately, the DrJava interpreter needs additional support
-for stepping and line number errors to be able to make Java a
-first-class Calico language.
+for stepping, access to line number when errors are encountered, and
+access to other languages to be able to make Java a first-class Calico
+language.
 
 \subsubsection{Calico Basic, Logo}
 
@@ -542,7 +585,10 @@ to develop a new Calico language in one of the existing Calico
 languages. For example, Calico Basic and Calico Logo are both
 interpreters written in Python. We have added the ability of both of
 those languages to use Calico libraries; however, neither has
-debugging support.
+debugging support. Thus, both Logo and Basic are now languages with
+access to all of the Calico libraries. For example, one can write
+programs in these languages with access to the modern libraries, such
+as Processing, Arduino, and robots (described below).
 
 \subsection{Performance}
 
@@ -551,7 +597,7 @@ languages ranges from competitive to slow
 \cite{python-benchmark}. Likewise, between Calico languages, there is
 also large performance variability. Some of these differences can be
 mitigated over time with refinements at various levels of
-implementation. For example, Calico Scheme has yet to be converted to
+implementations. For example, Calico Scheme has yet to be converted to
 use the DLR AST. Once that transformation is in place, we expect a 10
 to 100-fold increase in performance. Other differences are likely to
 remain, however. For example, Calico Basic is written in Calico
@@ -816,9 +862,6 @@ Project Jigsaw for the JVM.\\ URL http://openjdk.java.net/projects/jigsaw/ Acces
 \bibitem{java-nashorn}
 Project Nashorn for the JVM.\\ URL http://openjdk.java.net/projects/nashorn/ Accessed June 6, 2013.
 
-\bibitem{dynamic-language-runtime}
-Dynamic Language Runtime. Microsoft.\\ URL http://en.wikipedia.org/wiki/Dynamic\_Language\_Runtime Accessed June 6, 2013.
-
 \bibitem{ironpython}
 IronPython.\\ URL http://ironpython.codeplex.com/ Accessed on January 12, 2012.
 
@@ -928,6 +971,10 @@ URL http://www.microsoft.com/interop/cp/ Accessed June 6, 2013.
   Silverman, and Evelyn Eastmond. 2010. \textit{The Scratch Programming
   Language and Environment}. Transactions on Computing Education 10, 4,
   Article 16 (November 2010).
+
+\bibitem{dlr-microsoft} Dynamic Language Runtime Overview. \\ URL
+  http://msdn.microsoft.com/en-us/library/dd233052.aspx Accessed June
+  7, 2013.
 
 \end{thebibliography}
 
