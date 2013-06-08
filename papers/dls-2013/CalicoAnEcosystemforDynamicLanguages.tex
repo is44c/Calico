@@ -52,7 +52,17 @@
 
 \end{abstract}
 
-
+The Calico project was designed to be a dynamic languages ecosystem
+for learning, exploring, creating, and using dynamic languages, both
+individually, and in cooperation with each other. It defines a
+multi-language, multi-context programming framework and learning
+environment for computing education and research. The ecosystem is
+designed to support several interoperable programming languages
+(including Python, Scheme, and a drag-and-drop languages, called
+Jigsaw) running on a universal virtual computer.  We plan that that
+Calico will provide a long-term, robust ecosystem that can be used to
+create and sustain a community of researchers, educators, and students
+working together in dynamic languages research.
 
 \category{D.3.4}{Programming Languages}{interpreters, runtime environments}
 
@@ -624,16 +634,26 @@ Python, so speed improvements will probably be minimal.
 
 \subsection{Interoperations}
 
-First class languages can call functions and use values
-directly. Executing statements and expressions from another language.
-Sharing values between languages.  Sharing code between languages.
+As mentioned, first-class languages can call functions and use values
+directly from other languages. There are two methods for running code
+in one language from another: \textit{Evaluate} and
+\textit{Execute}. Both of these methods are contained in the
+\texttt{calico} global environment variable. Like their names suggest,
+\texttt{calico.Evaluate} will evaluate an expression in the given
+language, and return the result, while \texttt{calico.Execute} will
+execute a series of statements in the given language for their
+side-effects.
 
-Examples of interop.
+One reason one might do this is to convert from a type in one language
+to a type in another. As a simple example, if you were writing Scheme
+code, but wanted to create a Python tuple, then you could define, and
+call, a Scheme function to take any number of arguments and return a
+Python tuple (see Figure~\ref{scheme1}).
 
 \begin{lstlisting}[language=Lisp, morekeywords={define}, caption={Defining a function \texttt{pytuple} in 
       Calico Scheme that directly uses Calico Python's lambda to construct a Python tuple. Notice     
-      that in line 7 that the tuple's representation reflects the style
-      from Python.}, label={scheme1}]
+      that in line 7 that the tuple's displayed representation reflects the style
+      from Python rather than Scheme's.}, label={scheme1}]
 scheme> (define pytuple 
           (calico.Evaluate 
              "lambda *args: args" 
@@ -644,33 +664,51 @@ scheme> (pytuple 1 2 3)
 Ok
 \end{lstlisting}
 
+A more interesting example is calling a Scheme function from
+Python. One might wish to do this, for example, because of Scheme's
+lack of limitations on a recursive stack size. To call a Scheme
+function requires that we connect Scheme's function-calling machinery
+to the standard MVM function-calling system. This is a three step
+process:
 
-\begin{lstlisting}[language=Lisp, morekeywords={define}, caption={Defining a funtion \texttt{pylist} in Calico Scheme that creates a
-    Python list.}, label={scheme2}]
-scheme> (define pylist 
-           (calico.Evaluate 
-              "lambda *args: list(args)" 
-              "python"))
+\begin{enumerate}
+\item Write a regular (perhaps recursive) Scheme function 
+\item Place the Scheme function in a MVM-compatible function wrapper
+\item Make the wrapper available in the shared global environment
+\end{enumerate}
+
+For example, consider defining a recursive function to compute if a
+number is even. In Python, there is a limited function-calling stack
+size (set differently depending on the version of Python), whereas
+Scheme has no such limitation as mentioned. In
+Listing~\ref{callingscheme} we first define the iseven? function
+(lines 1 -- 7). Line 9 does two things: it wraps the iseven? function
+in a MVM function-calling wrapper using the Scheme primitive
+\texttt{func}, and also places the new function in the global
+environment, using the Scheme primitive \texttt{define!}. At this
+point, any Calico language with access to the global environment can
+now call the \texttt{iseven} function without worrying about recursion
+depth.
+
+\begin{lstlisting}[language=Lisp, keywords={define, lambda, cond, else, func, define!}, caption={Calling Scheme from Python.}, label={callingscheme}]
+scheme> (define iseven?
+         (lambda (n)
+            (cond
+                ((= n 0) #t)
+                ((= n 1) #f)
+                ((< n 0) (iseven? (- n)))
+                (else (iseven? (- n 2))))))
 Ok
-scheme> (pylist 1 2 3)
-[1, 2, 3]
+scheme> (define! iseven (func iseven?))
 Ok
 \end{lstlisting}
 
-For example, in Python you can call a function written in Scheme.
-
-\begin{enumerate}
-\item First, write a regular Scheme function
-\item Call the Scheme function in a CLR-compatible function wrapper
-\item Make the wrapper available in the shared environment
-\end{enumerate}
-
 If one of the languages is not a first class Calico language, they can
-still interoperate. For example, Java is not currently a first class
-Calico language, but you can still execute statements, and evaluate
-expressions from any language that has access to the calico
-object. Here, Calico Python calls Java to create a variable with a
-particular value:
+still interoperate. For example, as mentioned, Java is not currently a
+first-class Calico language, but you can still execute statements, and
+evaluate expressions from any language that has access to the calico
+object. In the example in Listing~\ref{callingjava1}, Calico Python
+calls Java to create a variable with a particular value.
 
 \begin{lstlisting}[language=Python, caption={Calling Java from Python.}, label={callingjava1}]
 python> calico.Execute("int x = 1;", "java")
@@ -685,22 +723,29 @@ python> print(pyx.intValue())
 Ok
 \end{lstlisting}
 
-The value of \texttt{pyx} is actually value directly from the Java world: a
-java.lang.Integer object. To convert it to a MVM value depends on the
-specifics of the foreign system. In this case, \texttt{pyx.intValue()}.
+The value of \texttt{pyx} is actually a value directly from the Java
+world: a \texttt{java.lang.Integer} object. To convert it to a MVM value
+depends on the specifics of the foreign system. In this case,
+calling \texttt{pyx.intValue()} is required.
 
 \subsection{Current Limitations and Future Work}
 
-Calico cannot currently use C-based libraries.
-Limited exports from one language to another.
-Move languages from second-class to first-class languages.
+As Calico is a work-in-progress, there are many directions to
+explore. For example, Calico cannot currently directly use C-based
+libraries.  However, this limitation could be overcome (see the
+IronClad project for IronPython \cite{ironclad}). Currently, there are
+a limited number of exports from one language to another. We believe
+that having additional exports between languages would facilitate
+learning transfer and transitions from one language to another.
+Finally, we are working to move more languages from their second-class
+status to be full first-class languages.
 
-In addition, Kolling mentioned in his keynote address at SIGCSE this
-year that he believes that we may be ready for a "structural editors"
-rebirth. And this would be for experts. Paraphrasing, his idea is to
-blend text editing with the idea of blocks (or "structures"). We can
-tip our hat to the idea that "blocks" can be productive to experts
-too.
+%% In addition, Kolling mentioned in his keynote address at SIGCSE this
+%% year that he believes that we may be ready for a "structural editors"
+%% rebirth. And this would be for experts. Paraphrasing, his idea is to
+%% blend text editing with the idea of blocks (or "structures"). We can
+%% tip our hat to the idea that "blocks" can be productive to experts
+%% too.
 
 \section{Calico Modules}
 
@@ -752,8 +797,8 @@ public class ModuleName {
 \end{lstlisting}
 
 If the code in Figure was compiled and placed into the Calico/modules
-folder, then it could be used in Python (as in the form ``import
-ModuleName''), Scheme (as in the form ``(use "ModuleName")'' and in
+folder, then it could be used in Python (as in the form \texttt{import
+ModuleName}, Scheme (as in the form \texttt{(use "ModuleName")} and in
 Jigsaw and all of the other Calico languages, in their respective
 forms. We now explore three modules that provided a variety of
 functionality for Calico first-class languages.
@@ -762,17 +807,16 @@ functionality for Calico first-class languages.
 
 Calico Processing is a module for developing digital works of art,
 data visualizations, interactive applications and animations. It
-offers Calico programmers the option to work with the familiar
-Processing command set (see http://processing.org/reference). The
-Calico Processing module attempts to be faithful to the Processing
-command set, including function names, arguments, and usage. The
-majority of the command set has been implemented, although some
-differences exist.
+offers Calico programmers the option to work with the familiar and
+popular \textit{Processing} command set (see \cite{processing}). The Calico
+Processing module attempts to be faithful to the Processing command
+set, including function names, arguments, and usage. The majority of
+the command set has been implemented, although some differences exist.
 
-The Processing language is a subset of Java with a wide variety of
+The original Processing language is a subset of Java with a wide variety of
 commands included for creating visualization and animations. The
-Calico Processing module brings the Processing command set to Calico
-programming languages. This module does not make use of the Java
+Calico Processing module brings the Processing command set to all of the Calico
+programming languages that can access Calico modules. This module does not make use of the Java
 language syntax. Instead, native data types and control structures of
 your chosen Calico language will determine how your application is
 constructed.
@@ -791,9 +835,8 @@ Mouse and keyboard events are not handled by implementing predefined
 functions. The Calico Processing module raises events, which are
 handled by the native language event handling syntax. Events raised by
 the module include onMousePressed, onMouseReleased, onMouseClicked,
-onKeyPressed, and onKeyReleased.
-
-Loops are implemented by handling a timer tick event named onLoop.
+onKeyPressed, and onKeyReleased. Loops are implemented by handling a
+timer tick event named onLoop.
 
 Certain predefined fields in Processing are implemented as functions.
 
@@ -813,19 +856,44 @@ Calico allows the drag-and-drop creation of Processing art via Jigsaw,
 line-by-line stepping through programs, and breakpoints by using any
 of the Calico first-class languages.
 
-\subsection{Myro}
+The Calico Processing module is similar in some respects to the port
+of the original Processing commands to the Python library
+\textit{pyprocessing} \cite{pyprocessing}, and perhaps other ports to
+specific languages. However, our module has been written, and
+compiled, just once and is then available to all of the Calico
+languages. In addition, the pyprocessing has additional dependencies
+that must be maintained and installed.
+
+\subsection{Myro and Graphics}
 
 Calico comes with a rich library for exploring robots, called
 Myro. The Myro module allows students to control a real or simulated
 robot, take pictures, do image processing, make the robot speak, go
-through a maze, draw a picture, etc.
+through a maze, draw a picture, etc. The Myro library is described in
+detail in \cite{blank-etal-2012}.
 
-\subsection{Graphics}
-
-This section describes Calico Graphics, a 2D graphics library for
-creating art, games, and animations in any of the Calico languages.
+The Calico Graphics module is a 2D graphics library for creating art,
+games, and animations in any of the Calico languages. The Calico
+Graphics module forms the basis for the Physics-based simulations and
+animations (for use in creating games such as Angry Birds) and
+contains GIS functionality. A full reference of the Calico Graphics
+module can be found at \cite{calico-graphics}.
 
 \section{Conclusion}
+
+The Calico project was designed to be a dynamic languages ecosystem
+for learning, exploring, creating, and using dynamic languages, both
+individually, and in cooperation with each other. It defines a
+multi-language, multi-context programming framework and learning
+environment for computing education and research. The ecosystem is
+designed to support several interoperable programming languages
+(including Python, Scheme, and Jigsaw) running on a universal virtual
+computer, a variety of pedagogical modules (including robotics, and
+art), and an assortment of physical devices (including different
+educational robotics platforms and a variety of physical sensors). In
+summary, we hope that Calico will provide a long-term, robust
+ecosystem that can be used to create and sustain a community of
+researchers, educators, and students working together.
 
 %%\appendix
 %%\section{Appendix Title}
@@ -838,7 +906,7 @@ The Calico Project grew out of research initially funded by Microsoft
 Research under the Institute for Personal Robots in Education, and
 then the National Science Foundation, grant DUE-0920539. In addition,
 we would like to thank the many students, teachers, and other
-explorers who have provided invaluable feedback on Calico so far.
+explorers who have provided invaluable feedback on Calico.
 
 % We recommend abbrvnat bibliography style.
 
@@ -975,6 +1043,21 @@ URL http://www.microsoft.com/interop/cp/ Accessed June 6, 2013.
 \bibitem{dlr-microsoft} Dynamic Language Runtime Overview. \\ URL
   http://msdn.microsoft.com/en-us/library/dd233052.aspx Accessed June
   7, 2013.
+
+\bibitem{drjava} Drjava. URL http://www.drjava.org/ Accessed June 8, 2013.
+
+\bibitem{ironclad} IronClad. URL http://code.google.com/p/ironclad/
+  Accessed June 8, 2013.
+
+\bibitem{processing} Processing. URL http://processing.org/reference
+  Accessed June 8, 2013.
+
+\bibitem{pyprocessing}
+  pyprocessing. http://code.google.com/p/pyprocessing/ Accessed June
+  8, 2013.
+
+\bibitem{calico-graphics} Calico Graphics Module. URL http://calicoproject.org/Calico\_Graphics Accessed June 8,
+  2013.
 
 \end{thebibliography}
 
